@@ -57,6 +57,7 @@
         .btn-success { background-color: #38a169; color: white; border: none; }
         .btn-success:hover { background-color: #2f855a; }
         .btn-sm { padding: 4px 10px; font-size: 9.5pt; }
+        .btn-xs { padding: 2px 6px; font-size: 8.5pt; }
         
         .form-control { width: 100%; padding: 8px 12px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 10.5pt; color: #2d3748; }
         .form-control:focus { outline: none; border-color: #3182ce; box-shadow: 0 0 0 1px #3182ce; }
@@ -107,17 +108,19 @@
         .chip-tag-must { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
         .chip-tag-opt { background-color: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; }
 
-        .data-table { width: 100%; border-collapse: collapse; font-size: 10.5pt; margin-top: 8px; background-color: #ffffff; margin-bottom: 8px; }
-        .data-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; border-bottom: 2px solid #e2e8f0; padding: 10px 12px; text-align: left; }
-        .data-table td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
+        .data-table { width: 100%; border-collapse: collapse; font-size: 9.5pt; margin-top: 8px; background-color: #ffffff; margin-bottom: 8px; }
+        .data-table th { background-color: #f7fafc; color: #4a5568; font-weight: bold; border-bottom: 2px solid #e2e8f0; padding: 4px 12px; text-align: left; }
+        .data-table td { padding: 2px 12px; border-bottom: 1px solid #edf2f7; color: #2d3748; }
 
         .table-scroll-wrapper { margin-top: 16px; margin-bottom: 8px; }
         .table-scroll-wrapper .data-table { margin-top: 0; margin-bottom: 0; }
         .table-scroll-wrapper .data-table thead th { position: sticky; top: var(--sticky-offset, 0px); z-index: 3; box-shadow: 0 2px 0 #e2e8f0; }
         #card-main-table .card-body { overflow: visible; }
 
-        .semester-header-row { background-color: #ebf8ff; font-weight: bold; color: #2b6cb0; border-top: 2px solid #3182ce; }
-        .semester-subtotal-row { background-color: #f7fafc; font-weight: bold; color: #4a5568; border-bottom: 2px solid #cbd5e0; }
+        .semester-header-row { background-color: #ebf8ff; font-weight: bold; color: #2b6cb0; border-top: 1px solid #3182ce; }
+        .semester-header-row td { padding: 2px 12px; }
+        .semester-subtotal-row { background-color: #f7fafc; font-weight: bold; color: #4a5568; border-bottom: 1px solid #cbd5e0; }
+        .semester-subtotal-row td { padding: 2px 12px; }
 
         .memo-input { width: 100%; padding: 4px 8px; border: 1px solid #e2e8f0; border-radius: 4px; font-size: 9.5pt; color: #4a5568; background-color: #fafafa; }
         .memo-input:focus { background-color: #ffffff; border-color: #3182ce; outline: none; }
@@ -1063,7 +1066,7 @@
                         <td class="text-center"><span class="${badge}">${typeDisplay}</span></td>
                         <td class="text-center" style="font-weight:bold;">${isDuplicate ? 0 : sub.credit}학점</td>
                         <td><input type="text" class="memo-input" value="${sub.memo || ''}" placeholder="과목 메모" onchange="updateSubjectMemo(${sub.id}, this.value)"></td>
-                        <td class="text-center"><button onclick="deleteSubject(${sub.id})" class="btn btn-danger btn-sm">삭제</button></td>
+                        <td class="text-center"><button onclick="deleteSubject(${sub.id})" class="btn btn-danger btn-xs">삭제</button></td>
                     `;
                     tbody.appendChild(tr);
                 });
