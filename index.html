@@ -602,7 +602,8 @@
                 const data = JSON.parse(raw);
                 if (data && Array.isArray(data.subjects)) {
                     subjects = data.subjects;
-                    overallMemo = data.overallMemo || "";
+                    // 메모는 '매번 새로 쓰는 한 줄' 방식이므로 로컬 저장소에서 복원하지 않음
+                    overallMemo = "";
                     nextId = data.nextId || (subjects.reduce((max, s) => Math.max(max, s.id || 0), 0) + 1);
                 }
             } catch (e) {
@@ -1234,7 +1235,14 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === "success") alertKeepScroll("💾 구글 시트에 안전하게 저장되었습니다!");
+                if (data.status === "success") {
+                    // 메모는 이미 '메모이력'에 기록됐으니, 다음 저장을 위해 입력창을 비움
+                    overallMemo = "";
+                    const memoTextarea = document.getElementById("overall-memo");
+                    if (memoTextarea) memoTextarea.value = "";
+                    saveToLocalStorage();
+                    alertKeepScroll("💾 구글 시트에 안전하게 저장되었습니다!");
+                }
                 else alertKeepScroll("저장 실패");
             })
             .catch(() => alertKeepScroll("통신 에러 발생"))
@@ -1257,7 +1265,10 @@
                     if (data.status === "success" && data.subjects) {
                         const keepX = window.scrollX, keepY = window.scrollY;
                         subjects = data.subjects;
-                        if (data.overallMemo !== undefined) overallMemo = data.overallMemo;
+                        // 메모칸은 '새 메모 작성용'이므로 불러오기 시 항상 비워둠
+                        overallMemo = "";
+                        const memoTextarea = document.getElementById("overall-memo");
+                        if (memoTextarea) memoTextarea.value = "";
                         const fullPhoneField = document.getElementById("user-phone-full");
                         const loadedPhone = data.userPhone || data.phone || data.userPhoneFull;
                         if (fullPhoneField && loadedPhone) fullPhoneField.value = loadedPhone;
