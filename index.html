@@ -626,6 +626,27 @@
             }
         }
 
+        function getCustomSemestersPayload() {
+            return semesterOrder
+                .filter(code => !DEFAULT_SEMESTER_CODES.includes(code))
+                .map(code => ({ code: code, label: semesterLabels[code] }));
+        }
+
+        function mergeCustomSemesters(list) {
+            if (!Array.isArray(list)) return;
+            let changed = false;
+            list.forEach(cs => {
+                if (cs && cs.code && !semesterOrder.includes(cs.code)) {
+                    const priorIndex = semesterOrder.indexOf("prior");
+                    const insertAt = priorIndex === -1 ? semesterOrder.length : priorIndex;
+                    semesterOrder.splice(insertAt, 0, cs.code);
+                    semesterLabels[cs.code] = cs.label || cs.code;
+                    changed = true;
+                }
+            });
+            if (changed) populateSemesterSelects();
+        }
+
         function toggleAddSemesterForm() {
             const box = document.getElementById("add-semester-form");
             if (box) box.style.display = (box.style.display === "none" || !box.style.display) ? "block" : "none";
@@ -687,15 +708,7 @@
                     nextId = data.nextId || (subjects.reduce((max, s) => Math.max(max, s.id || 0), 0) + 1);
 
                     if (Array.isArray(data.customSemesters)) {
-                        data.customSemesters.forEach(cs => {
-                            if (cs && cs.code && !semesterOrder.includes(cs.code)) {
-                                const priorIndex = semesterOrder.indexOf("prior");
-                                const insertAt = priorIndex === -1 ? semesterOrder.length : priorIndex;
-                                semesterOrder.splice(insertAt, 0, cs.code);
-                                semesterLabels[cs.code] = cs.label || cs.code;
-                            }
-                        });
-                        populateSemesterSelects();
+                        mergeCustomSemesters(data.customSemesters);
                     }
                 }
             } catch (e) {
@@ -1341,7 +1354,7 @@
             fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ userName: name, userPhone: formattedPhone, subjects: subjects, overallMemo: overallMemo })
+                body: JSON.stringify({ userName: name, userPhone: formattedPhone, subjects: subjects, overallMemo: overallMemo, customSemesters: getCustomSemestersPayload() })
             })
             .then(res => res.json())
             .then(data => {
@@ -1380,6 +1393,7 @@
             fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}`)
                 .then(res => res.json())
                 .then(data => {
+                    if (Array.isArray(data.customSemesters)) mergeCustomSemesters(data.customSemesters);
                     if (data.status === "success" && data.subjects) {
                         const keepX = window.scrollX, keepY = window.scrollY;
                         subjects = data.subjects;
