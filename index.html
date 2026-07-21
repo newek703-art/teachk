@@ -154,6 +154,11 @@
         .overall-memo-textarea { width: 100%; min-height: 90px; padding: 8px; border: 1px solid #cbd5e0; border-radius: 5px; font-size: 9.5pt; color: #2d3748; line-height: 1.5; resize: vertical; font-family: inherit; }
         .overall-memo-textarea:focus { outline: none; border-color: #3182ce; box-shadow: 0 0 0 1px #3182ce; background-color: #ffffff; }
         .overall-memo-textarea::placeholder { color: #cbd5e0; opacity: 0.6; }
+        .memo-history-container { margin-top: 6px; max-height: 220px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 6px; background: #fafafa; }
+        .memo-history-item { padding: 6px 10px; border-bottom: 1px solid #edf2f7; font-size: 9pt; color: #2d3748; line-height: 1.5; white-space: pre-wrap; }
+        .memo-history-item:last-child { border-bottom: none; }
+        .memo-history-date { display: block; color: #3182ce; font-weight: bold; font-size: 8.5pt; margin-bottom: 2px; }
+        .memo-history-empty { padding: 10px; color: #a0aec0; font-size: 9pt; text-align: center; }
 
         .prereq-check-box { padding: 14px; background: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; height: 100%; }
         .prereq-check-title { font-size: 10pt; font-weight: bold; color: #b7791f; display: flex; align-items: center; gap: 6px; }
@@ -364,6 +369,10 @@
                     <div class="card-body">
                         <div class="overall-memo-container">
                             <textarea id="overall-memo" class="overall-memo-textarea" placeholder="학기별 수강 순서, 교과목 대체 계획, 학점 이수 특이사항, 서류 제출 일정 등 전체적인 메모를 입력하세요." oninput="updateOverallMemo(this.value)"></textarea>
+                        </div>
+                        <div style="margin-top: 10px; font-size: 9.5pt; font-weight: bold; color: #4a5568;">🕒 메모 저장 이력</div>
+                        <div id="memo-history-list" class="memo-history-container">
+                            <div class="memo-history-empty">불러오기를 하면 메모 이력이 여기 표시됩니다.</div>
                         </div>
                     </div>
                 </div>
@@ -583,6 +592,7 @@
 
         let subjects = [];
         let overallMemo = "";
+        let memoHistory = [];
         let nextId = 1;
 
         const LOCAL_STORAGE_KEY = "hangugeogyowon_study_plan_v1";
@@ -760,6 +770,28 @@
             saveToLocalStorage();
         }
 
+        function renderMemoHistory() {
+            const box = document.getElementById("memo-history-list");
+            if (!box) return;
+            if (!memoHistory || memoHistory.length === 0) {
+                box.innerHTML = '<div class="memo-history-empty">등록된 메모 이력이 없습니다.</div>';
+                return;
+            }
+            // 최신 메모가 위로 오도록 정렬
+            const sorted = [...memoHistory].sort((a, b) => (a.date < b.date ? 1 : -1));
+            box.innerHTML = sorted.map(m => `
+                <div class="memo-history-item">
+                    <span class="memo-history-date">${m.date}</span>${escapeHtml(m.content || "")}
+                </div>
+            `).join("");
+        }
+
+        function escapeHtml(str) {
+            const div = document.createElement("div");
+            div.innerText = str;
+            return div.innerHTML;
+        }
+
         function updateSubjectMemo(id, val) {
             const sub = subjects.find(s => s.id === id);
             if (sub) sub.memo = val;
@@ -905,8 +937,10 @@
             if (confirm("⚠️ 모든 수강 데이터, 전적대 과목 및 메모가 완전히 초기화됩니다.\n정말로 전체 초기화하시겠습니까?")) {
                 subjects = []; 
                 overallMemo = "";
+                memoHistory = [];
                 nextId = 1; 
                 renderAll();
+                renderMemoHistory();
             }
         }
 
@@ -1236,6 +1270,14 @@
             .then(res => res.json())
             .then(data => {
                 if (data.status === "success") {
+                    // 새로 쓴 메모가 있었다면 화면 이력 목록에도 바로 반영
+                    if (overallMemo && overallMemo.trim() !== "") {
+                        const now = new Date();
+                        const pad = n => String(n).padStart(2, "0");
+                        const dateStr = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())} ${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                        memoHistory.push({ date: dateStr, content: overallMemo.trim() });
+                        renderMemoHistory();
+                    }
                     // 메모는 이미 '메모이력'에 기록됐으니, 다음 저장을 위해 입력창을 비움
                     overallMemo = "";
                     const memoTextarea = document.getElementById("overall-memo");
@@ -1269,6 +1311,8 @@
                         overallMemo = "";
                         const memoTextarea = document.getElementById("overall-memo");
                         if (memoTextarea) memoTextarea.value = "";
+                        memoHistory = Array.isArray(data.memoHistory) ? data.memoHistory : [];
+                        renderMemoHistory();
                         const fullPhoneField = document.getElementById("user-phone-full");
                         const loadedPhone = data.userPhone || data.phone || data.userPhoneFull;
                         if (fullPhoneField && loadedPhone) fullPhoneField.value = loadedPhone;
