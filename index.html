@@ -1202,7 +1202,7 @@
             const nums = fullPhoneRaw.replace(/[^0-9]/g, "");
             const formattedPhone = nums.length === 11 ? `${nums.slice(0,3)}-${nums.slice(3,7)}-${nums.slice(7)}` : `${nums.slice(0,3)}-${nums.slice(3,6)}-${nums.slice(6)}`;
 
-            if (saveBtn) { saveBtn.disabled = true; saveBtn.innerText = "⏳ 저장 중..."; }
+            if (saveBtn) { saveBtn.blur(); saveBtn.disabled = true; saveBtn.innerText = "⏳ 저장 중..."; }
 
             fetch(API_URL, {
                 method: "POST",
@@ -1226,7 +1226,7 @@
             const suffix = document.getElementById("user-phone-suffix").value.trim();
             if (!name || !suffix) { alert("이름과 전화번호 뒷 4자리를 입력해 주세요."); return; }
 
-            if (loadBtn) { loadBtn.disabled = true; loadBtn.innerText = "⏳ 조회 중..."; }
+            if (loadBtn) { loadBtn.blur(); loadBtn.disabled = true; loadBtn.innerText = "⏳ 조회 중..."; }
 
             fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}`)
                 .then(res => res.json())
