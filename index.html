@@ -1194,6 +1194,12 @@
             saveToLocalStorage();
         }
 
+        function alertKeepScroll(msg) {
+            const x = window.scrollX, y = window.scrollY;
+            alert(msg);
+            window.scrollTo(x, y);
+        }
+
         function saveToGoogleSheet(evt) {
             const saveBtn = evt ? evt.currentTarget : null;
             const name = document.getElementById("user-name").value.trim();
@@ -1212,10 +1218,10 @@
             })
             .then(res => res.json())
             .then(data => {
-                if (data.status === "success") alert("💾 구글 시트에 안전하게 저장되었습니다!");
-                else alert("저장 실패");
+                if (data.status === "success") alertKeepScroll("💾 구글 시트에 안전하게 저장되었습니다!");
+                else alertKeepScroll("저장 실패");
             })
-            .catch(() => alert("통신 에러 발생"))
+            .catch(() => alertKeepScroll("통신 에러 발생"))
             .finally(() => {
                 if (saveBtn) { saveBtn.disabled = false; saveBtn.innerText = "💾 저장하기"; }
             });
@@ -1233,16 +1239,18 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.status === "success" && data.subjects) {
+                        const keepX = window.scrollX, keepY = window.scrollY;
                         subjects = data.subjects;
                         if (data.overallMemo !== undefined) overallMemo = data.overallMemo;
                         const fullPhoneField = document.getElementById("user-phone-full");
                         const loadedPhone = data.userPhone || data.phone || data.userPhoneFull;
                         if (fullPhoneField && loadedPhone) fullPhoneField.value = loadedPhone;
                         renderAll();
-                        alert("✅ 성공적으로 데이터를 동기화했습니다!");
-                    } else alert("일치하는 정보를 찾을 수 없습니다.");
+                        window.scrollTo(keepX, keepY);
+                        alertKeepScroll("✅ 성공적으로 데이터를 동기화했습니다!");
+                    } else alertKeepScroll("일치하는 정보를 찾을 수 없습니다.");
                 })
-                .catch(() => alert("연동 에러 발생"))
+                .catch(() => alertKeepScroll("연동 에러 발생"))
                 .finally(() => {
                     if (loadBtn) { loadBtn.disabled = false; loadBtn.innerText = "🔍 불러오기"; }
                 });
