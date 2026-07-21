@@ -1207,10 +1207,13 @@
             saveToLocalStorage();
         }
 
+        // 스크롤 및 포커스 튀 현상 원천 차단을 위한 래퍼 함수
         function alertKeepScroll(msg) {
             const x = window.scrollX, y = window.scrollY;
             alert(msg);
-            window.scrollTo(x, y);
+            setTimeout(() => {
+                window.scrollTo(x, y);
+            }, 50);
         }
 
         function saveToGoogleSheet(evt) {
@@ -1259,7 +1262,9 @@
                         const loadedPhone = data.userPhone || data.phone || data.userPhoneFull;
                         if (fullPhoneField && loadedPhone) fullPhoneField.value = loadedPhone;
                         renderAll();
-                        window.scrollTo(keepX, keepY);
+                        setTimeout(() => {
+                            window.scrollTo(keepX, keepY);
+                        }, 50);
                         alertKeepScroll("✅ 성공적으로 데이터를 동기화했습니다!");
                     } else alertKeepScroll("일치하는 정보를 찾을 수 없습니다.");
                 })
