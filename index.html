@@ -784,11 +784,7 @@
             }
             // 최신 메모가 위로 오도록 정렬
             const sorted = [...memoHistory].sort((a, b) => (a.date < b.date ? 1 : -1));
-            box.innerHTML = sorted.map(m => `
-                <div class="memo-history-item">
-                    <span class="memo-history-date">${m.date}</span>${escapeHtml(m.content || "")}
-                </div>
-            `).join("");
+            box.innerHTML = sorted.map(m => `<div class="memo-history-item"><span class="memo-history-date">${m.date}</span>${escapeHtml(m.content || "")}</div>`).join("");
         }
 
         function escapeHtml(str) {
