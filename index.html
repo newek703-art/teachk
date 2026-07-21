@@ -8,7 +8,7 @@
     <style>
         *, *::before, *::after { box-sizing: border-box; }
         @page { size: A4; margin: 15mm 12mm; background-color: #faf9f6; }
-        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; margin: 0; padding: 0; background-color: #faf9f6; color: #2d3748; font-size: 11pt; line-height: 1.6; }
+        body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; margin: 0; padding: 0; background-color: #faf9f6; color: #2d3748; font-size: 11pt; line-height: 1.6; overflow-anchor: none; }
         
         .header-banner { background-color: #1a365d; color: #ffffff; margin: 0 0 20px 0; padding: 28px 15mm; border-bottom: 4px solid #d69e2e; }
         .header-banner h1 { margin: 0; font-size: 22pt; font-weight: bold; letter-spacing: -0.5px; }
@@ -769,6 +769,7 @@
             if (sub) {
                 if (sub.semesterCode === newCode) return;
                 const targetName = semesterLabels[newCode] || newCode;
+                if (document.activeElement) document.activeElement.blur();
                 if (confirm(`❓ '${sub.name}' 과목을 ${targetName}(으)로 이동하시겠습니까?`)) {
                     sub.semesterCode = newCode;
                     renderAll();
