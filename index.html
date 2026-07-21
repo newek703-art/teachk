@@ -103,7 +103,8 @@
         .subject-chip .subject-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         .subject-chip:hover:not(.disabled) { border-color: #3182ce; background-color: #ebf8ff; color: #2b6cb0; transform: translateY(-1px); box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .subject-chip.disabled { background-color: #edf2f7; border-color: #e2e8f0; color: #a0aec0; cursor: not-allowed; }
+        .subject-chip.disabled { background-color: #edf2f7; border-color: #e2e8f0; color: #a0aec0; cursor: pointer; }
+        .subject-chip.disabled:hover { border-color: #e53e3e; background-color: #fff5f5; color: #c53030; }
         .subject-chip .chip-tag { font-size: 8pt; padding: 2px 6px; border-radius: 3px; font-weight: bold; flex-shrink: 0; }
         .chip-tag-must { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; }
         .chip-tag-opt { background-color: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; }
@@ -813,12 +814,24 @@
                     <span style="flex-shrink:0; font-size:9pt; font-weight:bold;">${!isRetakeMode && isApplied ? '✔️' : '➕'}</span>
                 `;
 
-                if (isRetakeMode || !isApplied) {
+                if (!isRetakeMode && isApplied) {
+                    chip.onclick = () => removeSubjectByChipName(sub.name);
+                } else {
                     chip.onclick = () => addSubjectByChip(sub.name, selectedArea, sub.type, isRetakeMode);
                 }
 
                 chipsContainer.appendChild(chip);
             });
+        }
+
+        function removeSubjectByChipName(name) {
+            const normalized = name.replace(/\s+/g, "");
+            const target = subjects.find(s => !s.isRetake && s.name.replace(/\s+/g, "") === normalized);
+            if (!target) return;
+            if (confirm(`❓ '${target.name}' 과목의 수강신청을 취소(삭제)하시겠습니까?`)) {
+                subjects = subjects.filter(s => s.id !== target.id);
+                renderAll();
+            }
         }
 
         function addSubjectByChip(name, area, type, isRetake) {
