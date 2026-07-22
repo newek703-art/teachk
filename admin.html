@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>학습 설계 관리자 대시보드</title>
+<style>
+    body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; margin: 0; padding: 0; background-color: #faf9f6; color: #2d3748; }
+    .header-banner { background-color: #1a365d; color: #ffffff; padding: 24px 20px; border-bottom: 4px solid #d69e2e; }
+    .header-banner h1 { margin: 0; font-size: 18pt; }
+    .header-banner p { margin: 6px 0 0 0; font-size: 10pt; color: #e2e8f0; opacity: 0.9; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+    .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
+
+    #login-screen { max-width: 400px; margin: 60px auto; }
+    #login-screen input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 11pt; border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 10px; }
+    #login-screen button { width: 100%; padding: 10px; font-size: 11pt; font-weight: bold; background-color: #2b6cb0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
+    #login-screen button:hover { background-color: #2c5282; }
+    #login-error { color: #c53030; font-size: 9.5pt; margin-top: 6px; display: none; }
+
+    #dashboard-screen { display: none; }
+
+    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
+    .toolbar input[type="text"] { flex: 1; min-width: 200px; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 10.5pt; }
+    .toolbar select { padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 10.5pt; }
+    .toolbar button { padding: 8px 14px; border: none; border-radius: 6px; background-color: #4a5568; color: #fff; font-size: 10pt; cursor: pointer; }
+
+    table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
+    th { background-color: #f7fafc; color: #4a5568; font-weight: bold; text-align: left; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; cursor: pointer; user-select: none; }
+    th:hover { color: #2b6cb0; }
+    td { padding: 10px 12px; border-bottom: 1px solid #edf2f7; }
+    tr:hover td { background-color: #f7fafc; }
+
+    .course-badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 9pt; font-weight: bold; }
+    .course-badge.korean_teacher { background-color: #ebf8ff; color: #2b6cb0; }
+    .course-badge.social_worker { background-color: #f0fff4; color: #22543d; }
+    .course-badge.unknown { background-color: #edf2f7; color: #718096; }
+
+    .open-btn { padding: 5px 12px; border: none; border-radius: 5px; background-color: #2b6cb0; color: #fff; font-size: 9.5pt; cursor: pointer; text-decoration: none; display: inline-block; }
+    .open-btn:hover { background-color: #2c5282; }
+
+    #empty-state, #loading-state { text-align: center; padding: 40px; color: #718096; }
+    #student-count { font-size: 10pt; color: #718096; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+
+    <div class="header-banner">
+        <h1>🛠️ 학습 설계 관리자 대시보드</h1>
+        <p>등록된 전체 학생을 조회하고, 클릭해서 상세 화면으로 열람/수정할 수 있습니다.</p>
+    </div>
+
+    <div class="container">
+
+        <div id="login-screen" class="card">
+            <div style="font-weight: bold; margin-bottom: 12px; color: #1a365d;">🔒 관리자 비밀번호를 입력하세요</div>
+            <input type="password" id="password-input" placeholder="비밀번호" onkeydown="if(event.key==='Enter') login()">
+            <button onclick="login()">입장</button>
+            <div id="login-error">비밀번호가 올바르지 않습니다.</div>
+        </div>
+
+        <div id="dashboard-screen">
+            <div class="toolbar">
+                <input type="text" id="search-input" placeholder="🔍 이름으로 검색" oninput="renderTable()">
+                <select id="course-filter" onchange="renderTable()">
+                    <option value="">전체 과정</option>
+                    <option value="korean_teacher">한국어교원 2급</option>
+                    <option value="social_worker">사회복지사 2급</option>
+                </select>
+                <button onclick="loadStudents()">🔄 새로고침</button>
+                <a id="open-app-btn" href="#" target="_blank" class="open-btn" style="background-color: #2f855a;">📖 학습 설계 통합 앱 열기</a>
+            </div>
+
+            <div id="student-count"></div>
+            <div id="loading-state">불러오는 중...</div>
+            <div id="empty-state" style="display:none;">등록된 학생이 없습니다.</div>
+
+            <div class="card" id="table-wrap" style="display:none; padding: 0; overflow-x: auto;">
+                <table>
+                    <thead>
+                        <tr>
+                            <th onclick="sortBy('name')">이름</th>
+                            <th onclick="sortBy('phone')">전화번호</th>
+                            <th onclick="sortBy('course')">과정</th>
+                            <th onclick="sortBy('subjectCount')">과목수</th>
+                            <th onclick="sortBy('totalCredit')">총학점</th>
+                            <th onclick="sortBy('lastSaved')">최근 저장일시</th>
+                            <th>바로가기</th>
+                        </tr>
+                    </thead>
+                    <tbody id="student-table-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+<script>
+    // ⚠️ 실제 배포된 Apps Script 웹앱 주소로 바꿔서 사용하세요 (unified.html의 API_URL과 동일한 값)
+    const API_URL = "https://script.google.com/macros/s/AKfycbyoQOAGu_gsrw9Csfxf8_HjG_f8pSHfJaPZFyz2HeC2wMPdIUpYFMgvt6GrIPDxbdRAZA/exec";
+
+    // ⚠️ 학생 상세화면(관리 도구) 파일명 - 실제 사용 중인 파일명으로 바꿔주세요
+    const MAIN_APP_FILENAME = "index.html";
+
+    const courseLabels = { korean_teacher: "한국어교원 2급", social_worker: "사회복지사 2급" };
+
+    document.getElementById("open-app-btn").href = MAIN_APP_FILENAME;
+
+    let adminPassword = "";
+    let allStudents = [];
+    let sortField = "lastSaved";
+    let sortAsc = false;
+
+    function login() {
+        const pw = document.getElementById("password-input").value;
+        if (!pw) return;
+        adminPassword = pw;
+        loadStudents();
+    }
+
+    function loadStudents() {
+        document.getElementById("loading-state").style.display = "block";
+        document.getElementById("empty-state").style.display = "none";
+        document.getElementById("table-wrap").style.display = "none";
+
+        fetch(`${API_URL}?action=admin_list&password=${encodeURIComponent(adminPassword)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === "unauthorized") {
+                    document.getElementById("login-error").style.display = "block";
+                    document.getElementById("loading-state").style.display = "none";
+                    return;
+                }
+
+                document.getElementById("login-screen").style.display = "none";
+                document.getElementById("login-error").style.display = "none";
+                document.getElementById("dashboard-screen").style.display = "block";
+
+                allStudents = data.students || [];
+                renderTable();
+            })
+            .catch(() => {
+                alert("서버 통신 중 오류가 발생했습니다.");
+                document.getElementById("loading-state").style.display = "none";
+            });
+    }
+
+    function sortBy(field) {
+        if (sortField === field) {
+            sortAsc = !sortAsc;
+        } else {
+            sortField = field;
+            sortAsc = true;
+        }
+        renderTable();
+    }
+
+    function renderTable() {
+        const search = document.getElementById("search-input").value.trim();
+        const courseFilterVal = document.getElementById("course-filter").value;
+
+        let filtered = allStudents.filter(s => {
+            const matchName = !search || s.name.includes(search);
+            const matchCourse = !courseFilterVal || s.course === courseFilterVal;
+            return matchName && matchCourse;
+        });
+
+        filtered.sort((a, b) => {
+            let av = a[sortField], bv = b[sortField];
+            if (sortField === "lastSaved") { av = new Date(av || 0); bv = new Date(bv || 0); }
+            if (av < bv) return sortAsc ? -1 : 1;
+            if (av > bv) return sortAsc ? 1 : -1;
+            return 0;
+        });
+
+        document.getElementById("loading-state").style.display = "none";
+        document.getElementById("student-count").innerText = `총 ${filtered.length}명`;
+
+        if (filtered.length === 0) {
+            document.getElementById("empty-state").style.display = "block";
+            document.getElementById("table-wrap").style.display = "none";
+            return;
+        }
+
+        document.getElementById("empty-state").style.display = "none";
+        document.getElementById("table-wrap").style.display = "block";
+
+        const tbody = document.getElementById("student-table-body");
+        tbody.innerHTML = filtered.map(s => {
+            const suffix = s.phone.slice(-4);
+            const courseClass = courseLabels[s.course] ? s.course : "unknown";
+            const courseLabel = courseLabels[s.course] || (s.course || "미지정");
+            const openUrl = `${MAIN_APP_FILENAME}?adminName=${encodeURIComponent(s.name)}&adminPhone=${encodeURIComponent(suffix)}&adminCourse=${encodeURIComponent(s.course)}`;
+
+            return `
+                <tr>
+                    <td>${s.name}</td>
+                    <td>${s.phone}</td>
+                    <td><span class="course-badge ${courseClass}">${courseLabel}</span></td>
+                    <td>${s.subjectCount}과목</td>
+                    <td>${s.totalCredit}학점</td>
+                    <td>${s.lastSaved || "-"}</td>
+                    <td><a class="open-btn" href="${openUrl}" target="_blank">열기</a></td>
+                </tr>
+            `;
+        }).join('');
+    }
+</script>
+</body>
+</html>
