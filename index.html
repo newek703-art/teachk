@@ -535,6 +535,9 @@
                     <div id="learner-view-memo" style="font-size: 10pt; color: #4a5568; white-space: pre-wrap; line-height: 1.6;">등록된 메모가 없습니다.</div>
                 </div>
 
+                <!-- 영역별 이수 과목 체크리스트 -->
+                <div id="learner-area-checklist" style="margin-top: 25px;"></div>
+
                 <div style="margin-top: 30px; text-align: center; font-size: 10pt; color: #718096; border-top: 1px dashed #cbd5e0; padding-top: 15px;">
                     본 학습 설계표는 국가평생교육진흥원 표준교육과정 기준에 의거하여 작성되었습니다.
                 </div>
@@ -597,6 +600,14 @@
             "5": [
                 { name: "외국어로서의한국어교육실습", type: "전공필수" }
             ]
+        };
+
+        const areaNames = {
+            "1": "1영역 (한국어학)",
+            "2": "2영역 (일반/응용)",
+            "3": "3영역 (한국어교육론)",
+            "4": "4영역 (한국문화)",
+            "5": "5영역 (실습)"
         };
 
         const semesterLabels = {
@@ -1036,8 +1047,71 @@
             }
         }
 
+        const areaMinRequired = { "1": 2, "2": 2, "3": 8, "4": 2, "5": 1 };
+
+        function renderAreaChecklist() {
+            const container = document.getElementById("learner-area-checklist");
+            if (!container) return;
+
+            const takenNames = new Set(subjects.map(s => s.name.replace(/\s+/g, "")));
+
+            let html = `
+                <div style="margin-bottom: 12px; font-weight: bold; color: #1a365d; font-size: 11pt;">✅ 영역별 이수 과목 체크리스트</div>
+                <table class="data-table" style="font-size: 9.5pt;">
+                    <thead>
+                        <tr>
+                            <th style="width: 42%;">과목명</th>
+                            <th style="width: 16%;" class="text-center">구분</th>
+                            <th style="width: 42%;" class="text-center">이수 여부</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+
+            Object.keys(availableSubjects).forEach(areaCode => {
+                const subs = availableSubjects[areaCode];
+                const areaLabel = areaNames[areaCode] || (areaCode + "영역");
+                const takenCount = subs.filter(s => takenNames.has(s.name.replace(/\s+/g, ""))).length;
+                const minRequired = areaMinRequired[areaCode] || 0;
+                const isMet = takenCount >= minRequired;
+                const statusBadge = isMet
+                    ? `<span class="badge-choice">✅ 충족</span>`
+                    : `<span class="badge-warning">⚠️ 미충족</span>`;
+
+                html += `
+                    <tr style="background-color: #f7fafc;">
+                        <td colspan="3">
+                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                                <span style="font-weight: bold; color: #2b6cb0;">
+                                    ${areaLabel} <span style="font-weight: normal; color: #718096; font-size: 8.5pt;">(${takenCount}/${subs.length}과목 이수, 최소 ${minRequired}과목 이상 필요)</span>
+                                </span>
+                                ${statusBadge}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+
+                subs.forEach(sub => {
+                    const isTaken = takenNames.has(sub.name.replace(/\s+/g, ""));
+                    const typeBadgeClass = sub.type === "전공필수" ? "badge-essential" : (sub.type === "교양" ? "badge-gen" : "badge-choice");
+                    const typeDisplay = sub.type === "전공필수" ? "전필" : (sub.type === "전공선택" ? "전선" : sub.type);
+                    html += `
+                        <tr>
+                            <td>${sub.name}</td>
+                            <td class="text-center"><span class="${typeBadgeClass}">${typeDisplay}</span></td>
+                            <td class="text-center">${isTaken ? '<span style="color:#38a169; font-weight:bold;">✅ 이수</span>' : '<span style="color:#cbd5e0;">☐ 미이수</span>'}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
         function renderLearnerSheet() {
             syncLearnerName();
+            renderAreaChecklist();
             document.getElementById("learner-view-memo").innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
 
             const gridContainer = document.getElementById("learner-grid-container");
