@@ -1497,7 +1497,9 @@
                 const areaLabel = areaNames[areaCode] || (areaCode + "영역");
                 const takenCount = subs.filter(s => takenNames.has(s.name.replace(/\s+/g, ""))).length;
                 const minRequired = areaMinRequired[areaCode] || 0;
-                const isMet = takenCount >= minRequired;
+                const essentialSubs = subs.filter(s => s.type === "전공필수");
+                const allEssentialsTaken = essentialSubs.every(s => takenNames.has(s.name.replace(/\s+/g, "")));
+                const isMet = takenCount >= minRequired && allEssentialsTaken;
                 const countBadge = `<span class="badge-essential">${takenCount}/${minRequired}</span>`;
                 const statusBadge = isMet
                     ? `<span class="badge-fulfilled"><span style="color:#e53e3e;">✔</span> 충족</span>`
@@ -1505,7 +1507,7 @@
                 return `
                     <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                         <span style="font-weight: bold; color: #2b6cb0;">
-                            ${areaLabel} <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(최소 ${minRequired}과목 이상 필요)</span>
+                            ${areaLabel} <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(최소 ${minRequired}과목 이상 필요${essentialSubs.length > 0 ? ', 전공필수 전부 포함' : ''})</span>
                         </span>
                         <span style="display: flex; align-items: center; gap: 6px;">
                             ${countBadge}
