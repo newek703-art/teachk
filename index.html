@@ -45,6 +45,39 @@
         .card-body { transition: max-height 0.3s ease, opacity 0.2s ease; overflow: hidden; }
         .card.collapsed .card-body { display: none; }
         .card.collapsed { padding-bottom: 18px; }
+        .card-alert-dot { color: #e53e3e; font-weight: bold; margin-right: 6px; display: none; }
+        .card-alert-dot.active { display: inline-block; animation: alert-blink 1s ease-in-out infinite; }
+        .card:not(.collapsed) .card-alert-dot.active { display: none; }
+
+        @keyframes alert-blink {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50% { opacity: 0.25; transform: scale(1.25); }
+        }
+
+        #toast-container { position: fixed; top: 20px; right: 20px; z-index: 9999; display: flex; flex-direction: column; gap: 10px; max-width: 360px; }
+        .toast-notification {
+            display: flex; align-items: flex-start; gap: 10px;
+            padding: 14px 16px; border-radius: 8px; font-size: 10pt; line-height: 1.5;
+            box-shadow: 0 6px 16px rgba(0,0,0,0.18);
+            animation: toast-slide-in 0.3s ease-out;
+            color: #ffffff;
+        }
+        .toast-notification.toast-hide { animation: toast-slide-out 0.3s ease-in forwards; }
+        .toast-notification.toast-warning { background-color: #e53e3e; border-left: 5px solid #9b2c2c; }
+        .toast-notification.toast-success { background-color: #38a169; border-left: 5px solid #22543d; }
+        .toast-notification .toast-icon { font-size: 14pt; flex-shrink: 0; line-height: 1; }
+        .toast-notification .toast-text { flex: 1; }
+        .toast-notification .toast-close { cursor: pointer; font-weight: bold; opacity: 0.8; flex-shrink: 0; }
+        .toast-notification .toast-close:hover { opacity: 1; }
+
+        @keyframes toast-slide-in {
+            from { transform: translateX(120%); opacity: 0; }
+            to { transform: translateX(0); opacity: 1; }
+        }
+        @keyframes toast-slide-out {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(120%); opacity: 0; }
+        }
 
         .global-controls { display: flex; gap: 10px; margin-bottom: 15px; justify-content: flex-end; align-items: center; flex-wrap: wrap; }
 
@@ -134,8 +167,8 @@
         .badge-warning { background-color: #fff5f5; color: #c53030; border: 1px solid #fed7d7; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
         .badge-retake { background-color: #fffaf0; color: #dd6b20; border: 1px solid #fbd38d; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
 
-        .status-badge-ok { background-color: #48bb78; color: #ffffff; padding: 3px 8px; border-radius: 5px; font-size: 9pt; font-weight: bold; }
-        .status-badge-no { background-color: #ed8936; color: #ffffff; padding: 3px 8px; border-radius: 5px; font-size: 9pt; font-weight: bold; }
+        .status-badge-ok { background-color: #48bb78; color: #ffffff; padding: 3px 8px; border-radius: 5px; font-size: 9pt; font-weight: bold; white-space: nowrap; }
+        .status-badge-no { background-color: #ed8936; color: #ffffff; padding: 3px 8px; border-radius: 5px; font-size: 9pt; font-weight: bold; white-space: nowrap; }
 
         .checklist-item { display: flex; align-items: center; gap: 10px; padding: 10px 14px; margin-bottom: 8px; border-radius: 6px; font-size: 10.5pt; border: 1px solid #e2e8f0; transition: all 0.2s ease; }
         .checklist-item.uncompleted { background-color: #f7fafc; color: #718096; border-left: 5px solid #cbd5e0; }
@@ -161,7 +194,8 @@
         .memo-history-date { display: block; color: #3182ce; font-weight: bold; font-size: 8.5pt; margin-bottom: 0; }
         .memo-history-empty { padding: 10px; color: #a0aec0; font-size: 9pt; text-align: center; }
 
-        .prereq-check-box { padding: 14px; background: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; height: 100%; }
+        .prereq-check-box { padding: 14px; background: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; height: 100%; gap: 12px; }
+        #prereq-badge-container { flex-shrink: 0; }
         .prereq-check-title { font-size: 10pt; font-weight: bold; color: #b7791f; display: flex; align-items: center; gap: 6px; }
         .prereq-check-desc { font-size: 9pt; color: #718096; margin-top: 2px; }
 
@@ -184,10 +218,16 @@
 </head>
 <body>
 
+    <div id="toast-container"></div>
+
     <div id="sticky-top-region">
         <div class="header-banner">
-            <h1>한국어교원 2급 & 학위 연계 학습 플랜</h1>
-            <p>각 모듈(카드)을 마우스로 드래그하여 원하는 위치에 자유롭게 배치할 수 있습니다.</p>
+            <h1 id="main-title">한국어교원 2급 & 학위 연계 학습 플랜</h1>
+            <p id="main-subtitle">각 모듈(카드)을 마우스로 드래그하여 원하는 위치에 자유롭게 배치할 수 있습니다.</p>
+            <div style="margin-top: 12px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap;">
+                <label for="course-select" style="font-size: 10pt; font-weight: bold; color: #e2e8f0;">📚 과정 선택:</label>
+                <select id="course-select" onchange="onCourseChange(this.value)" style="padding: 6px 10px; border-radius: 6px; border: none; font-weight: bold; font-size: 10pt;"></select>
+            </div>
         </div>
 
         <div class="container" style="padding-bottom: 0;">
@@ -209,9 +249,12 @@
         <!-- 상단 연간제한학점 경고 & 실습 선이수 2분할 그리드 영역 -->
         <div id="top-dual-section" class="top-dual-grid">
             <!-- 경보 로그 카드 (관리 모드 전용) -->
-            <div id="warning-card" class="card" style="margin-bottom: 0; padding: 14px;">
+            <div id="warning-card" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
                 <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
-                    <span>⚠️ 연간 이수 제한 학점 경보</span>
+                    <span><span class="card-alert-dot" id="warning-alert-dot">❗</span>⚠️ 연간 이수 제한 학점 경보</span>
+                    <div class="card-controls">
+                        <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
+                    </div>
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div id="warning-inner-box" class="prereq-check-box" style="margin-bottom: 0;">
@@ -225,21 +268,24 @@
                 </div>
             </div>
 
-            <!-- 신습 선이수 요건 충족현황 카드 -->
-            <div id="card-prereq" class="card" style="margin-bottom: 0; padding: 14px;">
+            <!-- 선이수 요건 충족현황 카드 -->
+            <div id="card-prereq" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
                 <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
-                    <span>🎯 신습 선이수 요건 충족 현황</span>
+                    <span><span class="card-alert-dot" id="prereq-alert-dot">❗</span><span id="prereq-card-title-text">🎯 선이수 요건 충족 현황</span></span>
+                    <div class="card-controls">
+                        <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
+                    </div>
                 </div>
                 <div class="card-body" style="padding: 0;">
                     <div class="prereq-check-box" style="margin-bottom: 0;">
                         <div>
                             <div class="prereq-check-title">
-                                <span>🎯 1영역 + 3영역 총 8과목 이상 이수 조건</span>
+                                <span id="prereq-check-title-text">🎯 선이수 조건</span>
                             </div>
-                            <div class="prereq-check-desc">한국어교육실습 과목 수강 전 필수 조건 (1영역 및 3영역 합산)</div>
+                            <div class="prereq-check-desc" id="prereq-check-desc-text"></div>
                         </div>
                         <div id="prereq-badge-container">
-                            <span class="status-badge-no" id="prereq-status-badge">미충족 (0/8과목)</span>
+                            <span class="status-badge-no" id="prereq-status-badge">미충족 (0/0과목)</span>
                         </div>
                     </div>
                 </div>
@@ -247,10 +293,13 @@
         </div>
 
         <!-- 메모 입력 & 메모 저장 이력 2분할 그리드 -->
-        <div class="top-dual-grid" style="margin-top: 8px; margin-bottom: 8px; gap: 10px; align-items: start;">
-            <div id="card-overall-memo" class="card" style="margin-bottom: 0; padding: 12px;">
-                <div class="card-title" style="margin-bottom: 6px; padding-bottom: 4px;">
+        <div class="top-dual-grid" style="margin-top: 8px; margin-bottom: 8px;">
+            <div id="card-overall-memo" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
+                <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
                     <span>📝 전체 학업 계획 통합 메모</span>
+                    <div class="card-controls">
+                        <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="overall-memo-container">
@@ -259,9 +308,12 @@
                 </div>
             </div>
 
-            <div id="card-memo-history" class="card" style="margin-bottom: 0; padding: 12px;">
-                <div class="card-title" style="margin-bottom: 6px; padding-bottom: 4px;">
+            <div id="card-memo-history" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
+                <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
                     <span>🕒 메모 저장 이력</span>
+                    <div class="card-controls">
+                        <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div id="memo-history-list" class="memo-history-container">
@@ -318,13 +370,7 @@
 
                                 <div style="flex: 1; min-width: 150px;">
                                     <label style="font-size: 9.5pt; font-weight: bold; color: #1a365d; display: block; margin-bottom: 4px;">2️⃣ 영역 선택</label>
-                                    <select id="input-area" class="form-control" onchange="renderSubjectChips()">
-                                        <option value="1">1영역 (한국어학)</option>
-                                        <option value="2">2영역 (일반/응용)</option>
-                                        <option value="3">3영역 (한국어교육론)</option>
-                                        <option value="4">4영역 (한국문화)</option>
-                                        <option value="5">5영역 (한국어실습)</option>
-                                    </select>
+                                    <select id="input-area" class="form-control" onchange="renderSubjectChips()"></select>
                                 </div>
 
                                 <div style="flex: 1; min-width: 130px;">
@@ -332,6 +378,22 @@
                                     <select id="input-retake" class="form-control" onchange="renderSubjectChips()" style="background-color: #fffaf0; border-color: #fbd38d; font-weight: bold;">
                                         <option value="false">일반 수강</option>
                                         <option value="true">🔄 재수강</option>
+                                    </select>
+                                </div>
+
+                                <div id="law-variant-toggle-wrap" style="flex: 1; min-width: 130px; display: none;">
+                                    <label style="font-size: 9.5pt; font-weight: bold; color: #1a365d; display: block; margin-bottom: 4px;">4️⃣ 적용 법령</label>
+                                    <select id="law-variant-toggle" class="form-control" onchange="toggleLawVariant(this.value === 'true')">
+                                        <option value="false">🆕 신법 (2020년 이후)</option>
+                                        <option value="true">🔄 구법 (2020년 이전)</option>
+                                    </select>
+                                </div>
+
+                                <div id="degree-track-toggle-wrap" style="flex: 1; min-width: 130px;">
+                                    <label style="font-size: 9.5pt; font-weight: bold; color: #1a365d; display: block; margin-bottom: 4px;">5️⃣ 학위 병행 여부</label>
+                                    <select id="degree-track-toggle" class="form-control" onchange="toggleDegreeTracking(this.value === 'true')">
+                                        <option value="true">🎓 학위 병행</option>
+                                        <option value="false">자격증만</option>
                                     </select>
                                 </div>
                             </div>
@@ -378,10 +440,6 @@
                                 <input type="text" id="prior-name" class="form-control" placeholder="전적대 과목명 (예: 교양한국사)" style="flex: 2; min-width: 180px;" onkeydown="handlePriorKeydown(event)">
                                 <select id="prior-area" class="form-control" style="flex: 1; min-width: 100px;" onkeydown="handlePriorKeydown(event)">
                                     <option value="전적대">영역 없음</option>
-                                    <option value="1">1영역</option>
-                                    <option value="2">2영역</option>
-                                    <option value="3">3영역</option>
-                                    <option value="4">4영역</option>
                                 </select>
                                 <select id="prior-type" class="form-control" style="flex: 1; min-width: 100px;" onkeydown="handlePriorKeydown(event)">
                                     <option value="교양">교양</option>
@@ -431,7 +489,7 @@
                         </div>
                         <!-- 구글시트 바로가기 버튼 추가 -->
                         <div style="margin-bottom: 10px;">
-                            <a href="https://docs.google.com/spreadsheets/d/1CmSjtVfcSbNH5HNjzWRzfZMDYLS7zbtK6Y7074MktlY/edit?gid=0#gid=0" target="_blank" class="btn" style="width: 100%; background-color: #4a5568; display: block; text-decoration: none;">🔗 구글시트 바로가기</a>
+                            <a href="https://docs.google.com/spreadsheets/d/1m-NBAmqjZa05j1wtx395vIST3mdHSAQc9D1sxPpYM_E/edit?gid=0#gid=0" target="_blank" class="btn" style="width: 100%; background-color: #4a5568; display: block; text-decoration: none;">🔗 구글시트 바로가기</a>
                         </div>
                         <button onclick="clearPlanner()" class="btn btn-warning-dark" style="width: 100%;">🗑️ 전체 플래너 초기화</button>
                     </div>
@@ -456,15 +514,7 @@
                                 <div class="gauge-bar-inner" id="gauge-bar-lic" style="width: 0%;"></div>
                             </div>
                         </div>
-                        <div class="gauge-container" style="margin-top: 16px;">
-                            <div class="gauge-label">
-                                <span>학위 연계 총 이수학점</span>
-                                <span style="color: #2f855a;" id="gauge-text-deg">0 / 140 학점 (0%)</span>
-                            </div>
-                            <div class="gauge-bar-outer">
-                                <div class="gauge-bar-inner" id="gauge-bar-deg" style="width: 0%; background: linear-gradient(90deg, #38a169, #48bb78);"></div>
-                            </div>
-                        </div>
+                        <div id="degree-gauges-container"></div>
                     </div>
                 </div>
 
@@ -493,11 +543,11 @@
                 </div>
 
                 <!-- 4. 필수 과목 매칭 현황 카드 -->
-                <div id="card-checklist" class="card card-draggable" draggable="false" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
+                <div id="card-checklist" class="card card-draggable collapsed" draggable="false" ondragstart="dragStart(event)" ondragend="dragEnd(event)">
                     <div class="card-title" style="color: #2b6cb0; border-bottom: 2px solid #3182ce;">
                         <span>🎯 필수 과목 매칭 현황</span>
                         <div class="card-controls">
-                            <span class="collapse-btn" onclick="toggleCard(this, event)">접기 🔼</span>
+                            <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
                             <span class="drag-handle" title="마우스로 끌어서 이동" onmousedown="enableCardDrag(event)" onmouseup="disableCardDrag(event)">⠿ 이동</span>
                         </div>
                     </div>
@@ -519,21 +569,23 @@
 
             <div id="capture-target" class="learner-plan-sheet">
                 <div class="learner-plan-header">
-                    <h2>📖 한국어교원 2급 & 학위 취득 학습 설계표</h2>
+                    <h2 id="learner-sheet-title">📖 한국어교원 2급 & 학위 취득 학습 설계표</h2>
                     <p>학습자 맞춤형 학점 이수 계획 및 학기별 로드맵</p>
                 </div>
 
                 <div style="margin-bottom: 20px; font-size: 11pt; color: #2d3748; display: flex; justify-content: space-between; align-items: center; background: #f7fafc; padding: 12px 16px; border-radius: 6px; border: 1px solid #e2e8f0;">
                     <div><strong>학습자 성명:</strong> <span id="learner-view-name" style="color: #2b6cb0; font-weight: bold;">(미입력)</span></div>
-                    <div><strong>목표 과정:</strong> 외국어로서의 한국어교육 전공 (학위 + 자격증 연계)</div>
+                    <div><strong>목표 과정:</strong> <span id="learner-target-process">외국어로서의 한국어교육 전공 (학위 + 자격증 연계)</span></div>
                 </div>
 
                 <!-- 수강신청된 학기만 표시되는 3분할 카드 컨테이너 -->
+                <div id="learner-summary-box" style="margin-bottom: 20px;"></div>
+
                 <div id="learner-grid-container" class="learner-grid-container"></div>
 
                 <div style="margin-top: 25px; padding: 16px; background-color: #f7fafc; border: 1px solid #cbd5e0; border-radius: 6px;">
-                    <div style="font-weight: bold; color: #1a365d; margin-bottom: 6px; font-size: 10.5pt;">📌 학습 설계 종합 안내 및 특이사항</div>
-                    <div id="learner-view-memo" style="font-size: 10pt; color: #4a5568; white-space: pre-wrap; line-height: 1.6;">등록된 메모가 없습니다.</div>
+                    <div style="font-weight: bold; color: #1a365d; margin-bottom: 6px; font-size: 10.5pt;">📌 학습 설계 종합 안내 및 특이사항 <span style="font-weight: normal; color: #a0aec0; font-size: 8.5pt;">(클릭해서 바로 수정 가능)</span></div>
+                    <div id="learner-view-memo" contenteditable="true" oninput="updateOverallMemo(this.innerText)" onfocus="handleLearnerMemoFocus(this)" style="font-size: 10pt; color: #4a5568; white-space: pre-wrap; line-height: 1.6; min-height: 40px; outline: none; border-radius: 4px; padding: 4px; cursor: text;" onmouseover="this.style.backgroundColor='#ffffff'" onmouseout="if(document.activeElement!==this) this.style.backgroundColor='transparent'" onfocusin="this.style.backgroundColor='#ffffff'">등록된 메모가 없습니다.</div>
                 </div>
 
                 <!-- 영역별 이수 과목 체크리스트 -->
@@ -551,75 +603,226 @@
     </div>
 
     <script>
-        const API_URL = "https://script.google.com/macros/s/AKfycbxYbJZQH5pc5GN1iP0a4rZgp8Y0fGArOta5mAm-nDjR6ZtfWSNv3FOTUdUzLc75etE7/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbyoQOAGu_gsrw9Csfxf8_HjG_f8pSHfJaPZFyz2HeC2wMPdIUpYFMgvt6GrIPDxbdRAZA/exec";
 
-        const availableSubjects = {
-            "1": [
-                { name: "외국어로서의한국어학개론", type: "전공필수" },
-                { name: "한국어음운론", type: "전공선택" },
-                { name: "한국어어문규범", type: "전공선택" },
-                { name: "한국어문법론", type: "전공선택" },
-                { name: "한국어어휘론", type: "전공선택" },
-                { name: "한국어의미론", type: "전공선택" },
-                { name: "한국어화용론", type: "전공선택" },
-                { name: "한국어사", type: "전공선택" }
-            ],
-            "2": [
-                { name: "언어학개론", type: "전공선택" },
-                { name: "대조언어학", type: "전공선택" },
-                { name: "외국어습득론", type: "전공선택" },
-                { name: "응용언어학", type: "전공선택" },
-                { name: "사회언어학", type: "전공선택" },
-                { name: "심리언어학", type: "전공선택" }
-            ],
-            "3": [
-                { name: "외국어로서의한국어교육개론", type: "전공필수" },
-                { name: "외국어로서의한국어표현교육론", type: "전공필수" },
-                { name: "외국어로서의한국어교재론", type: "전공필수" },
-                { name: "외국어로서의한국어이해교육론", type: "전공필수" },
-                { name: "외국어로서의한국어문법교육론", type: "전공필수" },
-                { name: "외국어로서의한국어능력평가론", type: "전공선택" },
-                { name: "외국어로서의언어교수이론", type: "전공선택" },
-                { name: "외국어로서의한국어어휘교육론", type: "전공선택" },
-                { name: "외국어로서의한국어발음교육론", type: "전공선택" },
-                { name: "외국인을위한한국어문화교육론", type: "전공선택" },
-                { name: "외국어로서의한국어교육과정및교수요목설계", type: "전공선택" },
-                { name: "한국어한자교육론", type: "전공선택" },
-                { name: "한국어교육정책론", type: "전공선택" },
-                { name: "한국어번역론", type: "전공선택" }
-            ],
-            "4": [
-                { name: "한국의현대문화", type: "전공선택" },
-                { name: "한국문학개론", type: "전공선택" },
-                { name: "한국민속학", type: "전공선택" },
-                { name: "한국의전통문화", type: "전공선택" },
-                { name: "전통문화현장실습", type: "전공선택" },
-                { name: "한국현대문화비평", type: "전공선택" },
-                { name: "현대한국사회", type: "전공선택" },
-                { name: "한국문학의이해", type: "전공선택" }
-            ],
-            "5": [
-                { name: "외국어로서의한국어교육실습", type: "전공필수" }
-            ]
+        // ===================== 과정(자격증)별 설정 =====================
+        const courseConfigs = {
+            korean_teacher: {
+                id: "korean_teacher",
+                menuLabel: "한국어교원 2급",
+                title: "한국어교원 2급 & 학위 연계 학습 플랜",
+                subtitle: "각 모듈(카드)을 마우스로 드래그하여 원하는 위치에 자유롭게 배치할 수 있습니다.",
+                sheetTitle: "📖 한국어교원 2급 & 학위 취득 학습 설계표",
+                targetProcess: "외국어로서의 한국어교육 전공 (학위 + 자격증 연계)",
+                areaNames: {
+                    "1": "1영역 (한국어학)",
+                    "2": "2영역 (일반/응용)",
+                    "3": "3영역 (한국어교육론)",
+                    "4": "4영역 (한국문화)",
+                    "5": "5영역 (실습)"
+                },
+                areaMinRequired: { "1": 2, "2": 2, "3": 8, "4": 2, "5": 1 },
+                availableSubjects: {
+                    "1": [
+                        { name: "외국어로서의한국어학개론", type: "전공필수" },
+                        { name: "한국어음운론", type: "전공선택" },
+                        { name: "한국어어문규범", type: "전공선택" },
+                        { name: "한국어문법론", type: "전공선택" },
+                        { name: "한국어어휘론", type: "전공선택" },
+                        { name: "한국어의미론", type: "전공선택" },
+                        { name: "한국어화용론", type: "전공선택" },
+                        { name: "한국어사", type: "전공선택" }
+                    ],
+                    "2": [
+                        { name: "언어학개론", type: "전공선택" },
+                        { name: "대조언어학", type: "전공선택" },
+                        { name: "외국어습득론", type: "전공선택" },
+                        { name: "응용언어학", type: "전공선택" },
+                        { name: "사회언어학", type: "전공선택" },
+                        { name: "심리언어학", type: "전공선택" }
+                    ],
+                    "3": [
+                        { name: "외국어로서의한국어교육개론", type: "전공필수" },
+                        { name: "외국어로서의한국어표현교육론", type: "전공필수" },
+                        { name: "외국어로서의한국어교재론", type: "전공필수" },
+                        { name: "외국어로서의한국어이해교육론", type: "전공필수" },
+                        { name: "외국어로서의한국어문법교육론", type: "전공필수" },
+                        { name: "외국어로서의한국어능력평가론", type: "전공선택" },
+                        { name: "외국어로서의언어교수이론", type: "전공선택" },
+                        { name: "외국어로서의한국어어휘교육론", type: "전공선택" },
+                        { name: "외국어로서의한국어발음교육론", type: "전공선택" },
+                        { name: "외국인을위한한국어문화교육론", type: "전공선택" },
+                        { name: "외국어로서의한국어교육과정및교수요목설계", type: "전공선택" },
+                        { name: "한국어한자교육론", type: "전공선택" },
+                        { name: "한국어교육정책론", type: "전공선택" },
+                        { name: "한국어번역론", type: "전공선택" }
+                    ],
+                    "4": [
+                        { name: "한국의현대문화", type: "전공선택" },
+                        { name: "한국문학개론", type: "전공선택" },
+                        { name: "한국민속학", type: "전공선택" },
+                        { name: "한국의전통문화", type: "전공선택" },
+                        { name: "전통문화현장실습", type: "전공선택" },
+                        { name: "한국현대문화비평", type: "전공선택" },
+                        { name: "현대한국사회", type: "전공선택" },
+                        { name: "한국문학의이해", type: "전공선택" }
+                    ],
+                    "5": [
+                        { name: "외국어로서의한국어교육실습", type: "전공필수" }
+                    ]
+                },
+                degreeExtraCount: 1,
+                degreeTracks: [
+                    { key: "bachelor", label: "학위 연계 총 이수학점", total: 140 }
+                ],
+                prereqRule: {
+                    conditions: [
+                        { areas: ["1", "3"], minCount: 8, label: "1+3영역 합산" }
+                    ],
+                    titleText: "🎯 1영역 + 3영역 총 8과목 이상 이수 조건",
+                    descText: "한국어교육실습 과목 수강 전 필수 조건 (1영역 및 3영역 합산)"
+                },
+                defaultSemesterLabels: {
+                    "2026-2": "2026년 2학기",
+                    "2027-1": "2027년 1학기",
+                    "2027-2": "2027년 2학기",
+                    "prior": "🏛️ 전적대 학점"
+                },
+                defaultSemesterOrder: ["2026-2", "2027-1", "2027-2", "prior"]
+            },
+            social_worker: {
+                id: "social_worker",
+                menuLabel: "사회복지사 2급",
+                title: "사회복지사 2급 & 학위 연계 학습 플랜",
+                subtitle: "각 모듈(카드)을 마우스로 드래그하여 원하는 위치에 자유롭게 배치할 수 있습니다.",
+                sheetTitle: "📖 사회복지사 2급 & 학위 취득 학습 설계표",
+                targetProcess: "사회복지학 전공 (학위 + 자격증 연계)",
+                areaNames: {
+                    "1": "필수과목",
+                    "2": "선택과목"
+                },
+                areaMinRequired: { "1": 10, "2": 7 },
+                hasLawVariant: true,
+                newLawMinRequired: 7,
+                oldLawMinRequired: 4,
+                availableSubjects: {
+                    "1": [
+                        { name: "사회복지학개론", type: "전공필수" },
+                        { name: "인간행동과 사회환경", type: "전공필수" },
+                        { name: "사회복지정책론", type: "전공필수" },
+                        { name: "사회복지법제와 실천", type: "전공필수" },
+                        { name: "사회복지실천론", type: "전공필수" },
+                        { name: "사회복지조사론", type: "전공필수" },
+                        { name: "사회복지행정론", type: "전공필수" },
+                        { name: "지역사회복지론", type: "전공필수" },
+                        { name: "사회복지실천기술론", type: "전공필수" },
+                        { name: "사회복지현장실습", type: "전공필수" }
+                    ],
+                    "2": [
+                        { name: "아동복지론", type: "전공선택" },
+                        { name: "청소년복지론", type: "전공선택" },
+                        { name: "노인복지론", type: "전공선택" },
+                        { name: "장애인복지론", type: "전공선택" },
+                        { name: "여성복지론", type: "전공선택" },
+                        { name: "가족복지론", type: "전공선택" },
+                        { name: "산업복지론", type: "전공선택" },
+                        { name: "의료사회복지론", type: "전공선택" },
+                        { name: "정신건강론", type: "전공선택" },
+                        { name: "교정복지론", type: "전공선택" },
+                        { name: "사회보장론", type: "전공선택" },
+                        { name: "사회문제론", type: "전공선택" },
+                        { name: "자원봉사론", type: "전공선택" },
+                        { name: "정신건강사회복지론", type: "전공선택" },
+                        { name: "사회복지지도감독론", type: "전공선택" },
+                        { name: "사회복지자료분석론", type: "전공선택" },
+                        { name: "프로그램개발과 평가", type: "전공선택" },
+                        { name: "사회복지역사", type: "전공선택" },
+                        { name: "사회복지윤리와 철학", type: "전공선택" },
+                        { name: "가족상담 및 가족치료", type: "전공선택" },
+                        { name: "국제사회복지론", type: "전공선택" },
+                        { name: "복지국가론", type: "전공선택" },
+                        { name: "빈곤론", type: "전공선택" },
+                        { name: "사례관리론", type: "전공선택" },
+                        { name: "사회복지와 문화다양성", type: "전공선택" },
+                        { name: "사회복지와 인권", type: "전공선택" }
+                    ]
+                },
+                oldLawElectives: [
+                    { name: "아동복지론", type: "전공선택" },
+                    { name: "청소년복지론", type: "전공선택" },
+                    { name: "노인복지론", type: "전공선택" },
+                    { name: "장애인복지론", type: "전공선택" },
+                    { name: "여성복지론", type: "전공선택" },
+                    { name: "가족복지론", type: "전공선택" },
+                    { name: "산업복지론", type: "전공선택" },
+                    { name: "의료사회사업론", type: "전공선택" },
+                    { name: "학교사회사업론", type: "전공선택" },
+                    { name: "정신건강론", type: "전공선택" },
+                    { name: "교정복지론", type: "전공선택" },
+                    { name: "사회보장론", type: "전공선택" },
+                    { name: "사회문제론", type: "전공선택" },
+                    { name: "자원봉사론", type: "전공선택" },
+                    { name: "정신보건사회복지론", type: "전공선택" },
+                    { name: "사회복지지도감독론", type: "전공선택" },
+                    { name: "사회복지자료분석론", type: "전공선택" },
+                    { name: "프로그램 개발과 평가", type: "전공선택" },
+                    { name: "사회복지발달사", type: "전공선택" },
+                    { name: "사회복지윤리와 철학", type: "전공선택" }
+                ],
+                degreeExtraCount: 0,
+                checklistColumns: 2,
+                degreeTracks: [
+                    { key: "associate", label: "전문학사 학위 연계", total: 80, majorMin: 50, generalMin: 15 },
+                    { key: "bachelor", label: "학사 학위 연계", total: 140, majorMin: 60, generalMin: 30 }
+                ],
+                prereqRule: {
+                    conditions: [
+                        { areas: ["1"], minCount: 4, label: "필수과목" },
+                        { areas: ["2"], minCount: 2, label: "선택과목" }
+                    ],
+                    titleText: "🎯 사회복지현장실습 선이수 조건",
+                    descText: "사회복지현장실습 수강 전 필수 조건 (필수과목 4과목 + 선택과목 2과목 이상)"
+                },
+                defaultSemesterLabels: {
+                    "2026-2": "2026년 2학기",
+                    "2027-1": "2027년 1학기",
+                    "2027-2": "2027년 2학기",
+                    "prior": "🏛️ 전적대 학점"
+                },
+                defaultSemesterOrder: ["2026-2", "2027-1", "2027-2", "prior"]
+            }
         };
 
-        const areaNames = {
-            "1": "1영역 (한국어학)",
-            "2": "2영역 (일반/응용)",
-            "3": "3영역 (한국어교육론)",
-            "4": "4영역 (한국문화)",
-            "5": "5영역 (실습)"
-        };
+        let currentCourse = "korean_teacher";
 
-        const semesterLabels = {
-            "2026-2": "2026년 2학기",
-            "2027-1": "2027년 1학기",
-            "2027-2": "2027년 2학기",
-            "prior": "🏛️ 전적대 학점"
-        };
+        // 현재 선택된 과정의 활성 설정값 (switchCourse/applyCourseConfig에서 갱신됨)
+        let areaNames = {};
+        let areaMinRequired = {};
+        let availableSubjects = {};
+        let degreeExtraCount = 0;
+        let degreeTracks = [];
+        let prereqRule = null;
+        let requiredMappings = [];
+        let isOldLawVariant = false;
+        let pursuingDegree = true;
+        let prevHasWarnings = null;
+        let prevPrereqMet = null;
 
-        const semesterOrder = ["2026-2", "2027-1", "2027-2", "prior"];
-        const DEFAULT_SEMESTER_CODES = ["2026-2", "2027-1", "2027-2", "prior"];
+        let semesterLabels = {};
+        let semesterOrder = [];
+        let DEFAULT_SEMESTER_CODES = [];
+
+        function buildRequiredMappingsFromConfig() {
+            const list = [];
+            Object.keys(availableSubjects).forEach(areaCode => {
+                availableSubjects[areaCode].forEach(sub => {
+                    if (sub.type === "전공필수") {
+                        list.push({ key: sub.name, label: (areaNames[areaCode] || areaCode) + ": " + sub.name });
+                    }
+                });
+            });
+            return list;
+        }
 
         function buildSemesterOptionsHtml(selectedCode) {
             return semesterOrder.map(code => {
@@ -695,14 +898,165 @@
         let memoHistory = [];
         let nextId = 1;
 
-        const LOCAL_STORAGE_KEY = "hangugeogyowon_study_plan_v1";
+        const LOCAL_STORAGE_KEY = "unified_study_plan_v1";
+        let allCourseLocalData = {};
+
+        function snapshotCourseLocalData() {
+            allCourseLocalData[currentCourse] = {
+                subjects: subjects,
+                nextId: nextId,
+                customSemesters: getCustomSemestersPayload(),
+                isOldLawVariant: isOldLawVariant,
+                pursuingDegree: pursuingDegree
+            };
+        }
+
+        function populateAreaSelects() {
+            const areaCodes = Object.keys(areaNames).sort();
+
+            const inputArea = document.getElementById("input-area");
+            if (inputArea) {
+                const currentVal = inputArea.value;
+                inputArea.innerHTML = areaCodes.map(code => `<option value="${code}">${areaNames[code]}</option>`).join('')
+                    + `<option value="degree_custom">🎓 학위 (직접 입력)</option>`;
+                if (areaCodes.includes(currentVal) || currentVal === "degree_custom") inputArea.value = currentVal;
+            }
+
+            const priorArea = document.getElementById("prior-area");
+            if (priorArea) {
+                const currentVal = priorArea.value;
+                priorArea.innerHTML = `<option value="전적대">영역 없음</option>` +
+                    areaCodes.map(code => `<option value="${code}">${areaNames[code]}</option>`).join('');
+                if (currentVal === "전적대" || areaCodes.includes(currentVal)) priorArea.value = currentVal;
+            }
+        }
+
+        function applyCourseConfig(courseId) {
+            const cfg = courseConfigs[courseId];
+            if (!cfg) return;
+            prevHasWarnings = null;
+            prevPrereqMet = null;
+            areaNames = cfg.areaNames;
+            areaMinRequired = Object.assign({}, cfg.areaMinRequired);
+            availableSubjects = Object.assign({}, cfg.availableSubjects);
+            degreeExtraCount = cfg.degreeExtraCount;
+            degreeTracks = cfg.degreeTracks;
+            prereqRule = cfg.prereqRule;
+            requiredMappings = buildRequiredMappingsFromConfig();
+            semesterLabels = Object.assign({}, cfg.defaultSemesterLabels);
+            semesterOrder = cfg.defaultSemesterOrder.slice();
+            DEFAULT_SEMESTER_CODES = cfg.defaultSemesterOrder.slice();
+
+            const titleEl = document.getElementById("main-title");
+            const subtitleEl = document.getElementById("main-subtitle");
+            const sheetTitleEl = document.getElementById("learner-sheet-title");
+            const targetProcessEl = document.getElementById("learner-target-process");
+            if (titleEl) titleEl.innerText = cfg.title;
+            if (subtitleEl) subtitleEl.innerText = cfg.subtitle;
+            if (sheetTitleEl) sheetTitleEl.innerText = cfg.sheetTitle;
+            if (targetProcessEl) targetProcessEl.innerText = cfg.targetProcess;
+            document.title = cfg.title;
+
+            const prereqCard = document.getElementById("card-prereq");
+            if (prereqCard) {
+                if (cfg.prereqRule) {
+                    prereqCard.style.display = "";
+                    document.getElementById("prereq-card-title-text").innerText = "🎯 선이수 요건 충족 현황";
+                    document.getElementById("prereq-check-title-text").innerText = cfg.prereqRule.titleText;
+                    document.getElementById("prereq-check-desc-text").innerText = cfg.prereqRule.descText;
+                } else {
+                    prereqCard.style.display = "none";
+                }
+            }
+
+            const lawToggleWrap = document.getElementById("law-variant-toggle-wrap");
+            if (lawToggleWrap) {
+                lawToggleWrap.style.display = cfg.hasLawVariant ? "block" : "none";
+            }
+
+            populateSemesterSelects();
+            populateAreaSelects();
+        }
+
+        function applyLawVariant() {
+            const cfg = courseConfigs[currentCourse];
+            if (!cfg || !cfg.hasLawVariant) return;
+            if (isOldLawVariant) {
+                availableSubjects["2"] = cfg.oldLawElectives;
+                areaMinRequired["2"] = cfg.oldLawMinRequired;
+            } else {
+                availableSubjects["2"] = cfg.availableSubjects["2"];
+                areaMinRequired["2"] = cfg.newLawMinRequired;
+            }
+            requiredMappings = buildRequiredMappingsFromConfig();
+        }
+
+        function toggleLawVariant(checked) {
+            isOldLawVariant = checked;
+            applyLawVariant();
+            renderAll();
+            saveToLocalStorage();
+        }
+
+        function loadCourseLocalData(courseId) {
+            const saved = allCourseLocalData[courseId];
+            if (saved) {
+                subjects = saved.subjects || [];
+                nextId = saved.nextId || (subjects.reduce((max, s) => Math.max(max, s.id || 0), 0) + 1);
+                if (Array.isArray(saved.customSemesters)) mergeCustomSemesters(saved.customSemesters);
+                isOldLawVariant = !!saved.isOldLawVariant;
+                pursuingDegree = saved.pursuingDegree !== undefined ? saved.pursuingDegree : true;
+            } else {
+                subjects = [];
+                nextId = 1;
+                isOldLawVariant = false;
+                pursuingDegree = true;
+            }
+            overallMemo = "";
+            memoHistory = [];
+
+            applyLawVariant();
+            const toggleCheckbox = document.getElementById("law-variant-toggle");
+            if (toggleCheckbox) toggleCheckbox.value = isOldLawVariant ? "true" : "false";
+            const degreeToggleCheckbox = document.getElementById("degree-track-toggle");
+            if (degreeToggleCheckbox) degreeToggleCheckbox.value = pursuingDegree ? "true" : "false";
+        }
+
+        function toggleDegreeTracking(checked) {
+            pursuingDegree = checked;
+            renderAll();
+            saveToLocalStorage();
+        }
+
+        function switchCourse(courseId, skipSave) {
+            if (!courseConfigs[courseId]) return;
+            if (!skipSave) snapshotCourseLocalData();
+            currentCourse = courseId;
+            applyCourseConfig(courseId);
+            loadCourseLocalData(courseId);
+            const sel = document.getElementById("course-select");
+            if (sel) sel.value = courseId;
+            renderAll();
+            saveToLocalStorage();
+        }
+
+        function onCourseChange(courseId) {
+            switchCourse(courseId);
+        }
+
+        function populateCourseSelect() {
+            const sel = document.getElementById("course-select");
+            if (!sel) return;
+            sel.innerHTML = Object.keys(courseConfigs).map(id =>
+                `<option value="${id}">${courseConfigs[id].menuLabel}</option>`
+            ).join('');
+            sel.value = currentCourse;
+        }
 
         function saveToLocalStorage() {
             try {
-                const customSemesters = semesterOrder
-                    .filter(code => !DEFAULT_SEMESTER_CODES.includes(code))
-                    .map(code => ({ code: code, label: semesterLabels[code] }));
-                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ subjects, overallMemo, nextId, customSemesters }));
+                snapshotCourseLocalData();
+                localStorage.setItem(LOCAL_STORAGE_KEY, JSON.stringify({ currentCourse, courses: allCourseLocalData }));
             } catch (e) {
                 console.warn("로컬 저장 실패:", e);
             }
@@ -711,33 +1065,23 @@
         function loadFromLocalStorage() {
             try {
                 const raw = localStorage.getItem(LOCAL_STORAGE_KEY);
-                if (!raw) return;
-                const data = JSON.parse(raw);
-                if (data && Array.isArray(data.subjects)) {
-                    subjects = data.subjects;
-                    // 메모는 '매번 새로 쓰는 한 줄' 방식이므로 로컬 저장소에서 복원하지 않음
-                    overallMemo = "";
-                    nextId = data.nextId || (subjects.reduce((max, s) => Math.max(max, s.id || 0), 0) + 1);
-
-                    if (Array.isArray(data.customSemesters)) {
-                        mergeCustomSemesters(data.customSemesters);
-                    }
+                if (!raw) {
+                    applyCourseConfig(currentCourse);
+                    loadCourseLocalData(currentCourse);
+                    return;
                 }
+                const data = JSON.parse(raw);
+                allCourseLocalData = data.courses || {};
+                currentCourse = (data.currentCourse && courseConfigs[data.currentCourse]) ? data.currentCourse : currentCourse;
+                applyCourseConfig(currentCourse);
+                loadCourseLocalData(currentCourse);
             } catch (e) {
                 console.warn("로컬 데이터 불러오기 실패:", e);
+                applyCourseConfig(currentCourse);
+                loadCourseLocalData(currentCourse);
             }
         }
 
-
-        const requiredMappings = [
-            { key: "외국어로서의한국어학개론", label: "1영역: 외국어로서의한국어학개론" },
-            { key: "외국어로서의한국어교육개론", label: "3영역: 외국어로서의한국어교육개론" },
-            { key: "외국어로서의한국어표현교육론", label: "3영역: 외국어로서의한국어표현교육론" },
-            { key: "외국어로서의한국어교재론", label: "3영역: 외국어로서의한국어교재론" },
-            { key: "외국어로서의한국어이해교육론", label: "3영역: 외국어로서의한국어이해교육론" },
-            { key: "외국어로서의한국어문법교육론", label: "3영역: 외국어로서의한국어문법교육론" },
-            { key: "외국어로서의한국어교육실습", label: "5영역: 외국어로서의한국어교육실습" }
-        ];
 
         function toggleCard(btn, e) {
             e.stopPropagation();
@@ -876,6 +1220,21 @@
         function updateOverallMemo(text) {
             overallMemo = text;
             saveToLocalStorage();
+
+            const memoTextarea = document.getElementById("overall-memo");
+            if (memoTextarea && document.activeElement !== memoTextarea) {
+                memoTextarea.value = overallMemo;
+            }
+            const learnerMemoEl = document.getElementById("learner-view-memo");
+            if (learnerMemoEl && document.activeElement !== learnerMemoEl) {
+                learnerMemoEl.innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
+            }
+        }
+
+        function handleLearnerMemoFocus(el) {
+            if (el.innerText.trim() === "등록된 전체 메모가 없습니다." || el.innerText.trim() === "등록된 메모가 없습니다.") {
+                el.innerText = "";
+            }
         }
 
         function renderMemoHistory() {
@@ -902,6 +1261,16 @@
             saveToLocalStorage();
         }
 
+        function updateSubjectCredit(id, val) {
+            const sub = subjects.find(s => s.id === id);
+            if (sub && sub.semesterCode === "prior") {
+                const credit = parseInt(val, 10);
+                sub.credit = (!isNaN(credit) && credit > 0) ? credit : sub.credit;
+            }
+            renderAll();
+            saveToLocalStorage();
+        }
+
         function updateSubjectSemester(id, newCode) {
             const sub = subjects.find(s => s.id === id);
             if (sub) {
@@ -925,6 +1294,22 @@
 
             const selectedArea = areaSelect.value;
             const isRetakeMode = (retakeSelect.value === "true");
+
+            if (selectedArea === "degree_custom") {
+                chipsContainer.innerHTML = `
+                    <div style="display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 8px; background: #f7fafc; border: 1px dashed #cbd5e0; border-radius: 6px;">
+                        <input type="text" id="degree-custom-name" class="form-control" placeholder="과목명 (예: 교양한국사)" style="flex: 2; min-width: 160px;" onkeydown="handleDegreeCustomKeydown(event)">
+                        <select id="degree-custom-type" class="form-control" style="flex: 1; min-width: 100px;" onkeydown="handleDegreeCustomKeydown(event)">
+                            <option value="교양">교양</option>
+                            <option value="일반선택">일반선택</option>
+                        </select>
+                        <input type="number" id="degree-custom-credit" class="form-control" value="3" min="1" max="6" style="width: 70px;" onkeydown="handleDegreeCustomKeydown(event)">
+                        <button onclick="addDegreeCustomSubject()" class="btn" style="background-color: #2b6cb0; white-space: nowrap;">➕ 이 학기에 추가</button>
+                    </div>
+                `;
+                return;
+            }
+
             const subList = availableSubjects[selectedArea] || [];
 
             const currentAppliedNames = new Set(subjects.filter(s => !s.isRetake).map(s => s.name.replace(/\s+/g, "")));
@@ -959,6 +1344,45 @@
 
                 chipsContainer.appendChild(chip);
             });
+        }
+
+        function addDegreeCustomSubject() {
+            const nameInput = document.getElementById("degree-custom-name");
+            const typeSelect = document.getElementById("degree-custom-type");
+            const creditInput = document.getElementById("degree-custom-credit");
+            const semesterSelect = document.getElementById("input-semester");
+            const retakeSelect = document.getElementById("input-retake");
+
+            const name = nameInput.value.trim();
+            const credit = parseInt(creditInput.value, 10) || 3;
+
+            if (!name) {
+                alert("과목명을 입력해 주세요.");
+                nameInput.focus();
+                return;
+            }
+
+            subjects.push({
+                id: nextId++,
+                name: name,
+                area: "학위",
+                type: typeSelect.value,
+                credit: credit,
+                semesterCode: semesterSelect.value,
+                isRetake: retakeSelect.value === "true",
+                memo: ""
+            });
+
+            nameInput.value = "";
+            nameInput.focus();
+            renderAll();
+        }
+
+        function handleDegreeCustomKeydown(event) {
+            if (event.key === "Enter") {
+                event.preventDefault();
+                addDegreeCustomSubject();
+            }
         }
 
         function removeSubjectByChipName(name) {
@@ -1048,13 +1472,13 @@
             }
         }
 
-        const areaMinRequired = { "1": 2, "2": 2, "3": 8, "4": 2, "5": 1 };
-
         function renderAreaChecklist() {
             const container = document.getElementById("learner-area-checklist");
             if (!container) return;
 
             const takenNames = new Set(subjects.map(s => s.name.replace(/\s+/g, "")));
+            const cfg = courseConfigs[currentCourse] || {};
+            const checklistColumns = cfg.checklistColumns || 1;
 
             let totalMinRequired = 0;
             let totalCatalogTaken = 0;
@@ -1062,94 +1486,186 @@
                 totalMinRequired += (areaMinRequired[areaCode] || 0);
                 totalCatalogTaken += availableSubjects[areaCode].filter(s => takenNames.has(s.name.replace(/\s+/g, ""))).length;
             });
-            const degreeExtraRequired = totalMinRequired + 1;
+            const degreeExtraRequired = totalMinRequired + degreeExtraCount;
             const isDegreeExtraMet = totalCatalogTaken >= degreeExtraRequired;
             const degreeExtraBadge = isDegreeExtraMet
                 ? `<span class="badge-fulfilled"><span style="color:#e53e3e;">✔</span> 충족</span>`
                 : `<span class="badge-warning">⚠️ 미충족</span>`;
 
-            let html = `
-                <div style="margin-bottom: 12px; font-weight: bold; color: #1a365d; font-size: 11pt;">✅ 영역별 이수 과목 체크리스트</div>
-
-                <table class="data-table" style="font-size: 9.5pt;">
-                    <thead>
-                        <tr>
-                            <th style="width: 42%;">과목명</th>
-                            <th style="width: 16%;" class="text-center">구분</th>
-                            <th style="width: 42%;" class="text-center">이수 여부</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-
-            Object.keys(availableSubjects).forEach(areaCode => {
+            function buildAreaHeaderHtml(areaCode) {
                 const subs = availableSubjects[areaCode];
                 const areaLabel = areaNames[areaCode] || (areaCode + "영역");
                 const takenCount = subs.filter(s => takenNames.has(s.name.replace(/\s+/g, ""))).length;
                 const minRequired = areaMinRequired[areaCode] || 0;
                 const isMet = takenCount >= minRequired;
+                const countBadge = `<span class="badge-essential">${takenCount}/${minRequired}</span>`;
                 const statusBadge = isMet
                     ? `<span class="badge-fulfilled"><span style="color:#e53e3e;">✔</span> 충족</span>`
                     : `<span class="badge-warning">⚠️ 미충족</span>`;
-
-                html += `
-                    <tr style="background-color: #f7fafc;">
-                        <td colspan="3">
-                            <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
-                                <span style="font-weight: bold; color: #2b6cb0;">
-                                    ${areaLabel} <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(최소 ${minRequired}과목 이상 필요)</span>
-                                </span>
-                                ${statusBadge}
-                            </div>
-                        </td>
-                    </tr>
+                return `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
+                        <span style="font-weight: bold; color: #2b6cb0;">
+                            ${areaLabel} <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(최소 ${minRequired}과목 이상 필요)</span>
+                        </span>
+                        <span style="display: flex; align-items: center; gap: 6px;">
+                            ${countBadge}
+                            ${statusBadge}
+                        </span>
+                    </div>
                 `;
+            }
 
-                subs.forEach(sub => {
+            function buildAreaRowsHtml(areaCode) {
+                return availableSubjects[areaCode].map(sub => {
                     const isTaken = takenNames.has(sub.name.replace(/\s+/g, ""));
                     const typeBadgeClass = sub.type === "전공필수" ? "badge-essential" : (sub.type === "교양" ? "badge-gen" : "badge-choice");
                     const typeDisplay = sub.type === "전공필수" ? "전필" : (sub.type === "전공선택" ? "전선" : sub.type);
-                    html += `
+                    return `
                         <tr>
                             <td>${sub.name}</td>
                             <td class="text-center"><span class="${typeBadgeClass}">${typeDisplay}</span></td>
                             <td class="text-center">${isTaken ? '<span style="color:#38a169; font-weight:bold;">✅ 수강</span>' : '<span style="color:#cbd5e0;">☐ 미수강</span>'}</td>
                         </tr>
                     `;
+                }).join('');
+            }
+
+            let html = `<div style="margin-bottom: 12px; font-weight: bold; color: #1a365d; font-size: 11pt;">✅ 영역별 이수 과목 체크리스트</div>`;
+
+            if (checklistColumns > 1) {
+                const areaBlocks = Object.keys(availableSubjects).map(areaCode => `
+                    <div>
+                        <div style="background-color: #f7fafc; padding: 8px 10px; border-radius: 6px 6px 0 0; border: 1px solid #e2e8f0; border-bottom: none;">
+                            ${buildAreaHeaderHtml(areaCode)}
+                        </div>
+                        <table class="data-table" style="font-size: 9.5pt; margin-top: 0;">
+                            <thead>
+                                <tr>
+                                    <th style="width: 50%;">과목명</th>
+                                    <th style="width: 20%;" class="text-center">구분</th>
+                                    <th style="width: 30%;" class="text-center">이수 여부</th>
+                                </tr>
+                            </thead>
+                            <tbody>${buildAreaRowsHtml(areaCode)}</tbody>
+                        </table>
+                    </div>
+                `).join('');
+
+                html += `<div style="display: grid; grid-template-columns: repeat(${checklistColumns}, 1fr); gap: 16px; align-items: start;">${areaBlocks}</div>`;
+            } else {
+                html += `
+                    <table class="data-table" style="font-size: 9.5pt;">
+                        <thead>
+                            <tr>
+                                <th style="width: 42%;">과목명</th>
+                                <th style="width: 16%;" class="text-center">구분</th>
+                                <th style="width: 42%;" class="text-center">이수 여부</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                `;
+                Object.keys(availableSubjects).forEach(areaCode => {
+                    html += `<tr style="background-color: #f7fafc;"><td colspan="3">${buildAreaHeaderHtml(areaCode)}</td></tr>`;
+                    html += buildAreaRowsHtml(areaCode);
                 });
-            });
+                html += `</tbody></table>`;
+            }
 
-            html += `</tbody></table>`;
-
-            html += `
-                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; background-color: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; padding: 10px 14px; margin-top: 14px;">
-                    <span style="font-weight: bold; color: #1a365d;">
-                        🎓 학위취득 추가 요건 <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(전공과목 영역 무관 총 ${degreeExtraRequired}과목 이상 이수, 현재 ${totalCatalogTaken}과목)</span>
-                    </span>
-                    ${degreeExtraBadge}
-                </div>
-            `;
+            if (pursuingDegree && degreeExtraCount > 0) {
+                html += `
+                    <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; background-color: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; padding: 10px 14px; margin-top: 14px;">
+                        <span style="font-weight: bold; color: #1a365d;">
+                            🎓 학위취득 추가 요건 <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(전공과목 영역 무관 총 ${degreeExtraRequired}과목 이상 이수, 현재 ${totalCatalogTaken}과목)</span>
+                        </span>
+                        ${degreeExtraBadge}
+                    </div>
+                `;
+            }
 
             container.innerHTML = html;
+        }
+
+        function computeDuplicateIds(subjectList) {
+            const duplicateIds = new Set();
+            const retakeSupersededIds = new Set();
+            const namesWithRetake = new Set();
+            subjectList.forEach(s => { if (s.isRetake) namesWithRetake.add(s.name.replace(/\s+/g, "")); });
+
+            const countedForName = {};
+            subjectList.forEach(s => {
+                const norm = s.name.replace(/\s+/g, "");
+                if (namesWithRetake.has(norm)) {
+                    // 이 과목명에 재수강 기록이 있으면: 재수강 항목 중 첫 건만 학점 인정, 원본(재수강 아닌 항목)과 추가 재수강은 전부 미인정
+                    if (s.isRetake) {
+                        if (countedForName[norm] === undefined) countedForName[norm] = s.id;
+                        else duplicateIds.add(s.id);
+                    } else {
+                        duplicateIds.add(s.id);
+                        retakeSupersededIds.add(s.id);
+                    }
+                } else {
+                    // 재수강 기록이 없는 일반적인 동명 과목 중복 처리 (기존 로직과 동일)
+                    if (countedForName[norm] === undefined) countedForName[norm] = s.id;
+                    else duplicateIds.add(s.id);
+                }
+            });
+            duplicateIds.retakeSupersededIds = retakeSupersededIds;
+            return duplicateIds;
         }
 
         function renderLearnerSheet() {
             syncLearnerName();
             renderAreaChecklist();
-            document.getElementById("learner-view-memo").innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
+            const learnerMemoEl = document.getElementById("learner-view-memo");
+            if (learnerMemoEl && document.activeElement !== learnerMemoEl) {
+                learnerMemoEl.innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
+            }
 
             const gridContainer = document.getElementById("learner-grid-container");
             gridContainer.innerHTML = "";
 
-            let duplicates = new Set();
-            let seen = {};
+            const duplicateIds = computeDuplicateIds(subjects);
 
-            subjects.forEach(sub => {
-                if (!sub.isRetake) {
-                    const normalized = sub.name.replace(/\s+/g, "");
-                    if (seen[normalized]) { duplicates.add(normalized); } else { seen[normalized] = sub.id; }
-                }
-            });
+            // 전체 학점 요약박스 렌더링
+            const summaryBox = document.getElementById("learner-summary-box");
+            if (summaryBox) {
+                let summaryMajorCredits = 0, summaryDegreeCredits = 0, summaryGeneralCredits = 0;
+                subjects.forEach(sub => {
+                    if (!duplicateIds.has(sub.id)) {
+                        summaryDegreeCredits += sub.credit;
+                        if (sub.type.startsWith("전공")) summaryMajorCredits += sub.credit;
+                        if (sub.type === "교양") summaryGeneralCredits += sub.credit;
+                    }
+                });
+                const summaryLicenseTarget = (Object.values(areaMinRequired).reduce((a, b) => a + b, 0) + degreeExtraCount) * 3;
+
+                const trackBoxes = !pursuingDegree ? "" : degreeTracks.map(track => {
+                    let sub = "";
+                    if (track.majorMin !== undefined || track.generalMin !== undefined) {
+                        const parts = [];
+                        if (track.majorMin !== undefined) parts.push(`전공 ${summaryMajorCredits}/${track.majorMin}`);
+                        if (track.generalMin !== undefined) parts.push(`교양 ${summaryGeneralCredits}/${track.generalMin}`);
+                        sub = `<div style="font-size: 8pt; color: #718096; margin-top: 2px;">${parts.join(' · ')}</div>`;
+                    }
+                    return `
+                        <div style="flex: 1; min-width: 140px; background: #f0fff4; border: 1px solid #c6f6d5; border-radius: 6px; padding: 10px 12px; text-align: center;">
+                            <div style="font-size: 8.5pt; color: #22543d; font-weight: bold;">${track.label}</div>
+                            <div style="font-size: 15pt; font-weight: bold; color: #2f855a;">${summaryDegreeCredits}<span style="font-size: 9pt; color: #718096;"> / ${track.total}학점</span></div>
+                            ${sub}
+                        </div>
+                    `;
+                }).join('');
+
+                summaryBox.innerHTML = `
+                    <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                        <div style="flex: 1; min-width: 140px; background: #ebf8ff; border: 1px solid #bee3f8; border-radius: 6px; padding: 10px 12px; text-align: center;">
+                            <div style="font-size: 8.5pt; color: #2b6cb0; font-weight: bold;">자격증 연계 전공학점</div>
+                            <div style="font-size: 15pt; font-weight: bold; color: #2b6cb0;">${summaryMajorCredits}<span style="font-size: 9pt; color: #718096;"> / ${summaryLicenseTarget}학점</span></div>
+                        </div>
+                        ${trackBoxes}
+                    </div>
+                `;
+            }
 
             const activeSemesters = semesterOrder.filter(semCode => {
                 return subjects.some(s => s.semesterCode === semCode);
@@ -1170,14 +1686,15 @@
                 let subjectsHtml = "";
                 semSubs.forEach(sub => {
                     const normalized = sub.name.replace(/\s+/g, "");
-                    const isDuplicate = !sub.isRetake && duplicates.has(normalized) && seen[normalized] !== sub.id;
+                    const isDuplicate = duplicateIds.has(sub.id);
 
                     if (!isDuplicate) semCreditSum += sub.credit;
 
                     let badgeClass = sub.type === "전공필수" ? "badge-essential" : (sub.type === "교양" ? "badge-gen" : "badge-choice");
                     if (isDuplicate) badgeClass = "badge-warning";
 
-                    const typeDisplay = isDuplicate ? '미인정' : (sub.type === '전공필수' ? '전필' : (sub.type === '전공선택' ? '전선' : sub.type));
+                    const isRetakeSuperseded = duplicateIds.retakeSupersededIds && duplicateIds.retakeSupersededIds.has(sub.id);
+                    const typeDisplay = isRetakeSuperseded ? 'F 과락' : (isDuplicate ? '미인정' : (sub.type === '전공필수' ? '전필' : (sub.type === '전공선택' ? '전선' : sub.type)));
                     const areaDisplay = sub.area === '전적대' ? '전적대' : sub.area + '영역';
 
                     subjectsHtml += `
@@ -1187,7 +1704,7 @@
                                     <span style="font-weight: bold; font-size: 10pt; color: #2d3748; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">
                                         ${sub.name}
                                         ${sub.isRetake ? '<span class="badge-retake">재수강</span>' : ''}
-                                        ${isDuplicate ? '<span style="font-size:8.5pt; color:#e53e3e;">(중복)</span>':''}
+                                        ${isRetakeSuperseded ? '<span style="font-size:8.5pt; color:#e53e3e;">(F 과락→재수강)</span>' : (isDuplicate ? '<span style="font-size:8.5pt; color:#e53e3e;">(중복)</span>' : '')}
                                     </span>
                                     <span style="font-size: 8pt; color: #718096; white-space: nowrap; flex-shrink: 0;">
                                         ${areaDisplay} <span class="${badgeClass}">${typeDisplay}</span>
@@ -1205,7 +1722,7 @@
                 cardDiv.innerHTML = `
                     <div class="learner-semester-card-header">
                         <span>📌 ${semesterLabels[semCode] || semCode}</span>
-                        <span style="color: #2b6cb0; font-size: 10pt;">${semCreditSum}학점 / 24학점</span>
+                        <span style="color: #2b6cb0; font-size: 12pt; font-weight: bold;">${semCreditSum}학점</span>
                     </div>
                     <div class="learner-semester-card-body">
                         ${subjectsHtml}
@@ -1251,15 +1768,7 @@
 
             let semTotals = {};
             let yearlyTotals = {};
-            let duplicates = new Set();
-            let seen = {};
-
-            subjects.forEach(sub => {
-                if (!sub.isRetake) {
-                    const normalized = sub.name.replace(/\s+/g, "");
-                    if (seen[normalized]) { duplicates.add(normalized); } else { seen[normalized] = sub.id; }
-                }
-            });
+            const duplicateIds = computeDuplicateIds(subjects);
 
             semesterOrder.forEach(semCode => {
                 const semSubs = subjects.filter(s => s.semesterCode === semCode);
@@ -1274,7 +1783,7 @@
 
                 semSubs.forEach(sub => {
                     const normalized = sub.name.replace(/\s+/g, "");
-                    const isDuplicate = !sub.isRetake && duplicates.has(normalized) && seen[normalized] !== sub.id;
+                    const isDuplicate = duplicateIds.has(sub.id);
 
                     if (!isDuplicate) {
                         semCreditSum += sub.credit;
@@ -1288,7 +1797,12 @@
                     let badge = sub.type === "전공필수" ? "badge-essential" : (sub.type === "교양" ? "badge-gen" : "badge-choice");
                     if (isDuplicate) badge = "badge-warning";
 
-                    const typeDisplay = isDuplicate ? '미인정' : (sub.type === '전공필수' ? '전필' : (sub.type === '전공선택' ? '전선' : sub.type));
+                    const isRetakeSuperseded = duplicateIds.retakeSupersededIds && duplicateIds.retakeSupersededIds.has(sub.id);
+                    const typeDisplay = isRetakeSuperseded ? 'F 과락' : (isDuplicate ? '미인정' : (sub.type === '전공필수' ? '전필' : (sub.type === '전공선택' ? '전선' : sub.type)));
+
+                    const creditCell = (sub.semesterCode === "prior" && !isDuplicate)
+                        ? `<span style="display: inline-flex; align-items: center; gap: 3px; white-space: nowrap;"><input type="number" class="form-control" min="1" max="6" value="${sub.credit}" style="width: 45px; text-align: center; font-weight: bold; padding: 2px 4px; flex-shrink: 0;" onchange="updateSubjectCredit(${sub.id}, this.value)">학점</span>`
+                        : `${isDuplicate ? 0 : sub.credit}학점`;
 
                     const tr = document.createElement("tr");
                     tr.innerHTML = `
@@ -1300,11 +1814,11 @@
                         <td>
                             ${sub.name} 
                             ${sub.isRetake ? '<span class="badge-retake">재수강</span>' : ''}
-                            ${isDuplicate ? '<span style="font-size:8.5pt; color:#e53e3e;">(중복)</span>':''}
+                            ${isRetakeSuperseded ? '<span style="font-size:8.5pt; color:#e53e3e;">(F 과락→재수강)</span>' : (isDuplicate ? '<span style="font-size:8.5pt; color:#e53e3e;">(중복)</span>' : '')}
                         </td>
                         <td class="text-center">${sub.area === '전적대' ? '전적대' : sub.area + '영역'}</td>
                         <td class="text-center"><span class="${badge}">${typeDisplay}</span></td>
-                        <td class="text-center" style="font-weight:bold;">${isDuplicate ? 0 : sub.credit}학점</td>
+                        <td class="text-center" style="font-weight:bold;">${creditCell}</td>
                         <td><input type="text" class="memo-input" value="${sub.memo || ''}" placeholder="과목 메모" onchange="updateSubjectMemo(${sub.id}, this.value)"></td>
                         <td class="text-center"><button onclick="deleteSubject(${sub.id})" class="btn btn-danger btn-xs">삭제</button></td>
                     `;
@@ -1323,51 +1837,99 @@
 
             document.getElementById("total-subject-count-badge").innerText = `총 ${subjects.length}과목`;
 
-            let domains = {
-                "1": { name: "1영역 (한국어학)", current: 0, required: 6 },
-                "2": { name: "2영역 (일반/응용)", current: 0, required: 6 },
-                "3": { name: "3영역 (한국어교육론)", current: 0, required: 24 },
-                "4": { name: "4영역 (한국문화)", current: 0, required: 6 },
-                "5": { name: "5영역 (실습)", current: 0, required: 3 }
-            };
+            let domains = {};
+            Object.keys(areaNames).forEach(code => {
+                domains[code] = { name: areaNames[code], current: 0, required: (areaMinRequired[code] || 0) * 3 };
+            });
 
-            let totalMajorCredits = 0; let totalDegreeCredits = 0;
+            let totalMajorCredits = 0; let totalDegreeCredits = 0; let totalGeneralCredits = 0;
             let countedSubjects = new Set();
-            let prereqCount = 0;
+
+            if (prereqRule) {
+                prereqRule.conditions.forEach(cond => { cond._count = 0; });
+            }
 
             subjects.forEach(sub => {
                 const normalized = sub.name.replace(/\s+/g, "");
-                const isDuplicate = !sub.isRetake && duplicates.has(normalized) && seen[normalized] !== sub.id;
+                const isDuplicate = duplicateIds.has(sub.id);
 
                 if (!isDuplicate && !countedSubjects.has(normalized)) {
                     totalDegreeCredits += sub.credit;
                     if (sub.type.startsWith("전공")) totalMajorCredits += sub.credit;
+                    if (sub.type === "교양") totalGeneralCredits += sub.credit;
                     if (domains[sub.area]) {
                         domains[sub.area].current += sub.credit;
                     }
-                    if (sub.area === "1" || sub.area === "3") {
-                        prereqCount++;
+                    if (prereqRule) {
+                        prereqRule.conditions.forEach(cond => {
+                            if (cond.areas.includes(sub.area)) cond._count++;
+                        });
                     }
                     countedSubjects.add(normalized);
                 }
             });
 
             const prereqBadge = document.getElementById("prereq-status-badge");
-            if (prereqCount >= 8) {
-                prereqBadge.className = "status-badge-ok";
-                prereqBadge.innerText = `충족 (${prereqCount}/8과목)`;
-            } else {
-                prereqBadge.className = "status-badge-no";
-                prereqBadge.innerText = `미충족 (${prereqCount}/8과목)`;
+            const prereqAlertDot = document.getElementById("prereq-alert-dot");
+            if (prereqRule) {
+                const allMet = prereqRule.conditions.every(cond => cond._count >= cond.minCount);
+                const detailText = prereqRule.conditions
+                    .map(cond => `${cond.label} ${cond._count}/${cond.minCount}`)
+                    .join(", ");
+                if (allMet) {
+                    prereqBadge.className = "status-badge-ok";
+                    prereqBadge.innerText = `충족 (${detailText})`;
+                    if (prereqAlertDot) prereqAlertDot.classList.remove("active");
+                } else {
+                    prereqBadge.className = "status-badge-no";
+                    prereqBadge.innerText = `미충족 (${detailText})`;
+                    if (prereqAlertDot) prereqAlertDot.classList.add("active");
+                }
+                if (prevPrereqMet === false && allMet === true) {
+                    showToast("선이수 요건을 충족했습니다!", "success");
+                }
+                prevPrereqMet = allMet;
+            } else if (prereqAlertDot) {
+                prereqAlertDot.classList.remove("active");
+                prevPrereqMet = null;
             }
 
-            const licPct = Math.min(100, Math.round((totalMajorCredits / 48) * 100));
-            document.getElementById("gauge-text-lic").innerText = `${totalMajorCredits} / 48 학점 (${licPct}%)`;
+            const licenseCreditTarget = (Object.values(areaMinRequired).reduce((a, b) => a + b, 0) + degreeExtraCount) * 3;
+            const licPct = Math.min(100, Math.round((totalMajorCredits / licenseCreditTarget) * 100));
+            document.getElementById("gauge-text-lic").innerText = `${totalMajorCredits} / ${licenseCreditTarget} 학점 (${licPct}%)`;
             document.getElementById("gauge-bar-lic").style.width = `${licPct}%`;
 
-            const degPct = Math.min(100, Math.round((totalDegreeCredits / 140) * 100));
-            document.getElementById("gauge-text-deg").innerText = `${totalDegreeCredits} / 140 학점 (${degPct}%)`;
-            document.getElementById("gauge-bar-deg").style.width = `${degPct}%`;
+            const degreeGaugesContainer = document.getElementById("degree-gauges-container");
+            if (degreeGaugesContainer) {
+                degreeGaugesContainer.innerHTML = !pursuingDegree ? "" : degreeTracks.map(track => {
+                    const pct = Math.min(100, Math.round((totalDegreeCredits / track.total) * 100));
+                    let subDetail = "";
+                    if (track.majorMin !== undefined || track.generalMin !== undefined) {
+                        const parts = [];
+                        if (track.majorMin !== undefined) {
+                            const majorMet = totalMajorCredits >= track.majorMin;
+                            parts.push(`전공 ${totalMajorCredits}/${track.majorMin}${majorMet ? '✅' : '⚠️'}`);
+                        }
+                        if (track.generalMin !== undefined) {
+                            const generalMet = totalGeneralCredits >= track.generalMin;
+                            parts.push(`교양 ${totalGeneralCredits}/${track.generalMin}${generalMet ? '✅' : '⚠️'}`);
+                        }
+                        subDetail = `<div style="font-size: 8.5pt; color: #718096; margin-top: 4px; display: flex; gap: 12px;">${parts.map(p => `<span>${p}</span>`).join('')}</div>`;
+                    }
+                    return `
+                        <div class="gauge-container" style="margin-top: 16px;">
+                            <div class="gauge-label">
+                                <span>${track.label}</span>
+                                <span style="color: #2f855a;">${totalDegreeCredits} / ${track.total} 학점 (${pct}%)</span>
+                            </div>
+                            <div class="gauge-bar-outer">
+                                <div class="gauge-bar-inner" style="width: ${pct}%; background: linear-gradient(90deg, #38a169, #48bb78);"></div>
+                            </div>
+                            ${subDetail}
+                        </div>
+                    `;
+                }).join('');
+            }
 
             const checklist = document.getElementById("checklist-container");
             checklist.innerHTML = "";
@@ -1406,20 +1968,31 @@
             const log = document.getElementById("warning-log");
             const warningInnerBox = document.getElementById("warning-inner-box");
             const warningTitle = warningInnerBox.querySelector(".prereq-check-title");
+            const warningAlertDot = document.getElementById("warning-alert-dot");
+            const hasWarnings = warnings.length > 0;
 
-            if (warnings.length > 0) {
+            if (hasWarnings) {
                 log.innerHTML = warnings.join("<br>");
                 warningInnerBox.style.background = "#fff5f5";
                 warningInnerBox.style.borderColor = "#fed7d7";
                 warningTitle.style.color = "#c53030";
                 warningTitle.querySelector("span").innerText = "⚠️ 연간 이수 제한 규정 위반 경보";
+                if (warningAlertDot) warningAlertDot.classList.add("active");
             } else {
                 log.innerHTML = "규칙 위반 사항이 없습니다. 등록 과목이 규정에 맞게 정상 계산되었습니다.";
                 warningInnerBox.style.background = "#f0fff4";
                 warningInnerBox.style.borderColor = "#c6f6d5";
                 warningTitle.style.color = "#22543d";
                 warningTitle.querySelector("span").innerText = "✨ 연간 이수 제한 규정 준수";
+                if (warningAlertDot) warningAlertDot.classList.remove("active");
             }
+
+            if (prevHasWarnings === false && hasWarnings === true) {
+                showToast("연간 이수 제한 학점 규정을 위반했습니다! '연간 이수 제한 학점 경보' 카드를 확인해 주세요.", "warning", { persistent: true, id: "annual-limit-warning" });
+            } else if (prevHasWarnings === true && hasWarnings === false) {
+                dismissToast("annual-limit-warning");
+            }
+            prevHasWarnings = hasWarnings;
 
             renderSubjectChips();
             if (document.getElementById("view-learner").style.display !== "none") {
@@ -1430,6 +2003,49 @@
         }
 
         // 스크롤 및 포커스 튀 현상 원천 차단을 위한 래퍼 함수
+        function showToast(message, type, options) {
+            const container = document.getElementById("toast-container");
+            if (!container) return;
+
+            options = options || {};
+            const persistent = !!options.persistent;
+            const toastId = options.id;
+
+            // 같은 id의 지속형 토스트가 이미 떠있으면 중복 생성하지 않음
+            if (toastId) {
+                const existing = container.querySelector(`[data-toast-id="${toastId}"]`);
+                if (existing) return;
+            }
+
+            const icon = type === "warning" ? "⚠️" : "🎉";
+            const toast = document.createElement("div");
+            toast.className = `toast-notification toast-${type === "warning" ? "warning" : "success"}`;
+            if (toastId) toast.setAttribute("data-toast-id", toastId);
+            toast.innerHTML = `
+                <span class="toast-icon">${icon}</span>
+                <span class="toast-text">${message}</span>
+                <span class="toast-close" onclick="this.parentElement.remove()">✕</span>
+            `;
+            container.appendChild(toast);
+
+            if (!persistent) {
+                setTimeout(() => {
+                    toast.classList.add("toast-hide");
+                    setTimeout(() => toast.remove(), 300);
+                }, 5000);
+            }
+        }
+
+        function dismissToast(toastId) {
+            const container = document.getElementById("toast-container");
+            if (!container) return;
+            const toast = container.querySelector(`[data-toast-id="${toastId}"]`);
+            if (toast) {
+                toast.classList.add("toast-hide");
+                setTimeout(() => toast.remove(), 300);
+            }
+        }
+
         function alertKeepScroll(msg) {
             const x = window.scrollX, y = window.scrollY;
             alert(msg);
@@ -1452,7 +2068,7 @@
             fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ userName: name, userPhone: formattedPhone, subjects: subjects, overallMemo: overallMemo, customSemesters: getCustomSemestersPayload() })
+                body: JSON.stringify({ userName: name, userPhone: formattedPhone, course: currentCourse, subjects: subjects, overallMemo: overallMemo, customSemesters: getCustomSemestersPayload() })
             })
             .then(res => res.json())
             .then(data => {
@@ -1488,7 +2104,7 @@
 
             if (loadBtn) { loadBtn.blur(); loadBtn.disabled = true; loadBtn.innerText = "⏳ 조회 중..."; }
 
-            fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}`)
+            fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}&course=${encodeURIComponent(currentCourse)}`)
                 .then(res => res.json())
                 .then(data => {
                     if (Array.isArray(data.customSemesters)) mergeCustomSemesters(data.customSemesters);
@@ -1532,7 +2148,29 @@
         updateStickyOffset();
 
         loadFromLocalStorage();
+        populateCourseSelect();
         renderAll();
+
+        // 관리자 대시보드에서 특정 학생을 열람하기 위해 넘어온 경우 자동으로 불러오기
+        (function handleAdminDeepLink() {
+            const params = new URLSearchParams(window.location.search);
+            const adminName = params.get("adminName");
+            const adminSuffix = params.get("adminPhone");
+            const adminCourse = params.get("adminCourse");
+
+            if (!adminName || !adminSuffix) return;
+
+            if (adminCourse && courseConfigs[adminCourse] && adminCourse !== currentCourse) {
+                switchCourse(adminCourse, true);
+            }
+
+            const nameField = document.getElementById("user-name");
+            const suffixField = document.getElementById("user-phone-suffix");
+            if (nameField) nameField.value = adminName;
+            if (suffixField) suffixField.value = adminSuffix;
+
+            setTimeout(() => loadFromGoogleSheet(), 300);
+        })();
     </script>
 </body>
 </html>
