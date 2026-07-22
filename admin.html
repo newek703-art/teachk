@@ -17,6 +17,10 @@
     #login-screen button { width: 100%; padding: 10px; font-size: 11pt; font-weight: bold; background-color: #2b6cb0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
     #login-screen button:hover { background-color: #2c5282; }
     #login-error { color: #c53030; font-size: 9.5pt; margin-top: 6px; display: none; }
+    #login-btn { display: flex; align-items: center; justify-content: center; gap: 8px; }
+    #login-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    .spinner { width: 14px; height: 14px; border: 2px solid rgba(255,255,255,0.4); border-top-color: #ffffff; border-radius: 50%; animation: spin 0.7s linear infinite; display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
 
     #dashboard-screen { display: none; }
 
@@ -55,7 +59,7 @@
         <div id="login-screen" class="card">
             <div style="font-weight: bold; margin-bottom: 12px; color: #1a365d;">🔒 관리자 비밀번호를 입력하세요</div>
             <input type="password" id="password-input" placeholder="비밀번호" onkeydown="if(event.key==='Enter') login()">
-            <button onclick="login()">입장</button>
+            <button id="login-btn" onclick="login()">입장</button>
             <div id="login-error">비밀번호가 올바르지 않습니다.</div>
         </div>
 
@@ -69,6 +73,7 @@
                 </select>
                 <button onclick="loadStudents()">🔄 새로고침</button>
                 <a id="open-app-btn" href="#" target="_blank" class="open-btn" style="background-color: #2f855a;">📖 학습 설계 통합 앱 열기</a>
+                <button onclick="logout()" style="background-color: #718096;">🔒 로그아웃</button>
             </div>
 
             <div id="student-count"></div>
@@ -110,10 +115,18 @@
     let sortField = "lastSaved";
     let sortAsc = false;
 
+    function setLoginButtonLoading(isLoading) {
+        const btn = document.getElementById("login-btn");
+        if (!btn) return;
+        btn.disabled = isLoading;
+        btn.innerHTML = isLoading ? `<span class="spinner"></span> 확인 중...` : "입장";
+    }
+
     function login() {
         const pw = document.getElementById("password-input").value;
         if (!pw) return;
         adminPassword = pw;
+        setLoginButtonLoading(true);
         loadStudents();
     }
 
@@ -128,9 +141,12 @@
                 if (data.status === "unauthorized") {
                     document.getElementById("login-error").style.display = "block";
                     document.getElementById("loading-state").style.display = "none";
+                    setLoginButtonLoading(false);
+                    sessionStorage.removeItem("admin_dashboard_pw");
                     return;
                 }
 
+                sessionStorage.setItem("admin_dashboard_pw", adminPassword);
                 document.getElementById("login-screen").style.display = "none";
                 document.getElementById("login-error").style.display = "none";
                 document.getElementById("dashboard-screen").style.display = "block";
@@ -141,7 +157,25 @@
             .catch(() => {
                 alert("서버 통신 중 오류가 발생했습니다.");
                 document.getElementById("loading-state").style.display = "none";
+                setLoginButtonLoading(false);
             });
+    }
+
+    // 새로고침해도 로그인이 풀리지 않도록 세션에 저장된 비밀번호로 자동 재로그인 시도
+    (function tryAutoLogin() {
+        const savedPw = sessionStorage.getItem("admin_dashboard_pw");
+        if (savedPw) {
+            adminPassword = savedPw;
+            loadStudents();
+        }
+    })();
+
+    function logout() {
+        sessionStorage.removeItem("admin_dashboard_pw");
+        adminPassword = "";
+        document.getElementById("dashboard-screen").style.display = "none";
+        document.getElementById("login-screen").style.display = "block";
+        document.getElementById("password-input").value = "";
     }
 
     function sortBy(field) {
