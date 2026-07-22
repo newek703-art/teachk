@@ -128,6 +128,7 @@
         .memo-input::placeholder { color: #cbd5e0; opacity: 0.6; }
         
         .badge-essential { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
+        .badge-fulfilled { background-color: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
         .badge-choice { background-color: #f0fff4; color: #22543d; border: 1px solid #c6f6d5; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
         .badge-gen { background-color: #edf2f7; color: #4a5568; border: 1px solid #cbd5e0; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
         .badge-warning { background-color: #fff5f5; color: #c53030; border: 1px solid #fed7d7; border-radius: 4px; padding: 2px 6px; font-size: 9pt; font-weight: bold; }
@@ -1055,8 +1056,21 @@
 
             const takenNames = new Set(subjects.map(s => s.name.replace(/\s+/g, "")));
 
+            let totalMinRequired = 0;
+            let totalCatalogTaken = 0;
+            Object.keys(availableSubjects).forEach(areaCode => {
+                totalMinRequired += (areaMinRequired[areaCode] || 0);
+                totalCatalogTaken += availableSubjects[areaCode].filter(s => takenNames.has(s.name.replace(/\s+/g, ""))).length;
+            });
+            const degreeExtraRequired = totalMinRequired + 1;
+            const isDegreeExtraMet = totalCatalogTaken >= degreeExtraRequired;
+            const degreeExtraBadge = isDegreeExtraMet
+                ? `<span class="badge-fulfilled"><span style="color:#e53e3e;">✔</span> 충족</span>`
+                : `<span class="badge-warning">⚠️ 미충족</span>`;
+
             let html = `
                 <div style="margin-bottom: 12px; font-weight: bold; color: #1a365d; font-size: 11pt;">✅ 영역별 이수 과목 체크리스트</div>
+
                 <table class="data-table" style="font-size: 9.5pt;">
                     <thead>
                         <tr>
@@ -1075,7 +1089,7 @@
                 const minRequired = areaMinRequired[areaCode] || 0;
                 const isMet = takenCount >= minRequired;
                 const statusBadge = isMet
-                    ? `<span class="badge-choice">✅ 충족</span>`
+                    ? `<span class="badge-fulfilled"><span style="color:#e53e3e;">✔</span> 충족</span>`
                     : `<span class="badge-warning">⚠️ 미충족</span>`;
 
                 html += `
@@ -1083,7 +1097,7 @@
                         <td colspan="3">
                             <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px;">
                                 <span style="font-weight: bold; color: #2b6cb0;">
-                                    ${areaLabel} <span style="font-weight: normal; color: #718096; font-size: 8.5pt;">(${takenCount}/${subs.length}과목 이수, 최소 ${minRequired}과목 이상 필요)</span>
+                                    ${areaLabel} <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(최소 ${minRequired}과목 이상 필요)</span>
                                 </span>
                                 ${statusBadge}
                             </div>
@@ -1106,6 +1120,16 @@
             });
 
             html += `</tbody></table>`;
+
+            html += `
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 6px; background-color: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; padding: 10px 14px; margin-top: 14px;">
+                    <span style="font-weight: bold; color: #1a365d;">
+                        🎓 학위취득 추가 요건 <span style="font-weight: bold; color: #e53e3e; font-size: 9.5pt;">(전공과목 영역 무관 총 ${degreeExtraRequired}과목 이상 이수, 현재 ${totalCatalogTaken}과목)</span>
+                    </span>
+                    ${degreeExtraBadge}
+                </div>
+            `;
+
             container.innerHTML = html;
         }
 
