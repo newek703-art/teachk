@@ -2159,6 +2159,7 @@
             const adminName = params.get("adminName");
             const adminSuffix = params.get("adminPhone");
             const adminCourse = params.get("adminCourse");
+            const adminView = params.get("adminView");
 
             if (!adminName || !adminSuffix) return;
 
@@ -2171,7 +2172,12 @@
             if (nameField) nameField.value = adminName;
             if (suffixField) suffixField.value = adminSuffix;
 
-            setTimeout(() => loadFromGoogleSheet(), 300);
+            setTimeout(() => {
+                loadFromGoogleSheet();
+                if (adminView === "learner") {
+                    setTimeout(() => switchMode("learner"), 700);
+                }
+            }, 300);
         })();
     </script>
 </body>
