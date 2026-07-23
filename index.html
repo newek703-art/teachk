@@ -293,7 +293,7 @@
         </div>
 
         <!-- 메모 입력 & 메모 저장 이력 2분할 그리드 -->
-        <div class="top-dual-grid" style="margin-top: 8px; margin-bottom: 8px;">
+        <div id="memo-grid-section" class="top-dual-grid" style="margin-top: 8px; margin-bottom: 8px;">
             <div id="card-overall-memo" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
                 <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
                     <span>📝 전체 학업 계획 통합 메모</span>
@@ -1189,6 +1189,7 @@
             const viewManage = document.getElementById("view-manage");
             const viewLearner = document.getElementById("view-learner");
             const topDualSection = document.getElementById("top-dual-section");
+            const memoGridSection = document.getElementById("memo-grid-section");
             const globalToggleBox = document.getElementById("global-toggle-box");
 
             if (mode === "manage") {
@@ -1197,6 +1198,7 @@
                 viewManage.style.display = "grid";
                 viewLearner.style.display = "none";
                 topDualSection.style.display = "grid";
+                if (memoGridSection) memoGridSection.style.display = "grid";
                 globalToggleBox.style.display = "flex";
             } else {
                 btnManage.className = "mode-tab";
@@ -1204,6 +1206,7 @@
                 viewManage.style.display = "none";
                 viewLearner.style.display = "block";
                 topDualSection.style.display = "none";
+                if (memoGridSection) memoGridSection.style.display = "none";
                 globalToggleBox.style.display = "none";
                 renderLearnerSheet();
             }
