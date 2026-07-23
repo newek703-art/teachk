@@ -807,6 +807,7 @@
         let pursuingDegree = true;
         let prevHasWarnings = null;
         let prevPrereqMet = null;
+        let suppressNextLoadAlert = false;
 
         let semesterLabels = {};
         let semesterOrder = [];
@@ -2129,8 +2130,9 @@
                         setTimeout(() => {
                             window.scrollTo(keepX, keepY);
                         }, 50);
-                        alertKeepScroll("✅ 성공적으로 데이터를 동기화했습니다!");
-                    } else alertKeepScroll("일치하는 정보를 찾을 수 없습니다.");
+                        if (!suppressNextLoadAlert) alertKeepScroll("✅ 성공적으로 데이터를 동기화했습니다!");
+                        suppressNextLoadAlert = false;
+                    } else if (!suppressNextLoadAlert) alertKeepScroll("일치하는 정보를 찾을 수 없습니다.");
                 })
                 .catch(() => alertKeepScroll("연동 에러 발생"))
                 .finally(() => {
@@ -2170,10 +2172,12 @@
                 const stickyRegion = document.getElementById("sticky-top-region");
                 if (stickyRegion) stickyRegion.style.display = "none";
                 document.body.style.paddingTop = "0";
+                switchMode("learner");
             }
 
             if (adminCourse && courseConfigs[adminCourse] && adminCourse !== currentCourse) {
                 switchCourse(adminCourse, true);
+                if (adminView === "learner") switchMode("learner");
             }
 
             const nameField = document.getElementById("user-name");
@@ -2182,10 +2186,8 @@
             if (suffixField) suffixField.value = adminSuffix;
 
             setTimeout(() => {
+                if (adminView === "learner") suppressNextLoadAlert = true;
                 loadFromGoogleSheet();
-                if (adminView === "learner") {
-                    setTimeout(() => switchMode("learner"), 700);
-                }
             }, 300);
         })();
     </script>
