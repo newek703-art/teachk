@@ -2163,6 +2163,12 @@
 
             if (!adminName || !adminSuffix) return;
 
+            if (adminView === "learner") {
+                const stickyRegion = document.getElementById("sticky-top-region");
+                if (stickyRegion) stickyRegion.style.display = "none";
+                document.body.style.paddingTop = "0";
+            }
+
             if (adminCourse && courseConfigs[adminCourse] && adminCourse !== currentCourse) {
                 switchCourse(adminCourse, true);
             }
