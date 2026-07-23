@@ -68,7 +68,7 @@
         background: rgba(26, 54, 93, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;
     }
     #student-modal-card {
-        background: #ffffff; border-radius: 10px; max-width: 640px; width: 100%; max-height: 85vh;
+        background: #ffffff; border-radius: 10px; max-width: 780px; width: 100%; max-height: 85vh;
         overflow-y: auto; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;
     }
     #student-modal-close {
@@ -313,102 +313,22 @@
 
         const modal = document.getElementById("student-modal");
         const modalBody = document.getElementById("student-modal-body");
-        modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#718096;">불러오는 중...</div>`;
+
+        const src = `${MAIN_APP_FILENAME}?adminName=${encodeURIComponent(name)}&adminPhone=${encodeURIComponent(suffix)}&adminCourse=${encodeURIComponent(course)}&adminView=learner`;
+
+        modalBody.innerHTML = `
+            <div id="iframe-scale-wrap" style="width: 100%; height: 70vh; overflow-y: auto; overflow-x: hidden; border: 1px solid #e2e8f0; border-radius: 6px;">
+                <iframe id="student-preview-iframe" src="${src}"
+                    style="width: 1320px; height: 1900px; border: none; transform: scale(0.55); transform-origin: top left;">
+                </iframe>
+            </div>
+        `;
         modal.style.display = "flex";
-
-        fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}&course=${encodeURIComponent(course)}`)
-            .then(res => res.json())
-            .then(data => {
-                if (data.status !== "success") {
-                    modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#718096;">데이터를 찾을 수 없습니다.</div>`;
-                    return;
-                }
-
-                const subjects = data.subjects || [];
-                const courseLabel = courseLabels[course] || course;
-
-                const bySemester = {};
-                subjects.forEach(s => {
-                    const key = s.semesterCode || "미지정";
-                    if (!bySemester[key]) bySemester[key] = [];
-                    bySemester[key].push(s);
-                });
-
-                const semesterOrderGuess = Object.keys(bySemester).sort((a, b) => {
-                    if (a === "prior") return 1;
-                    if (b === "prior") return -1;
-                    return a.localeCompare(b);
-                });
-
-                const totalCredit = subjects.reduce((sum, s) => sum + (Number(s.credit) || 0), 0);
-
-                let html = `
-                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
-                        <div>
-                            <div style="font-size: 14pt; font-weight: bold; color: #1a365d;">${name}</div>
-                            <div style="font-size: 9.5pt; color: #718096; margin-top: 2px;">${data.userPhone || ""} · <span class="course-badge ${courseLabels[course] ? course : 'unknown'}">${courseLabel}</span></div>
-                        </div>
-                        <div style="text-align:right;">
-                            <div style="font-size: 9.5pt; color: #718096;">총 이수 학점</div>
-                            <div style="font-size: 16pt; font-weight: bold; color: #2b6cb0;">${totalCredit}학점 <span style="font-size:9pt; color:#a0aec0;">(${subjects.length}과목)</span></div>
-                        </div>
-                    </div>
-                `;
-
-                semesterOrderGuess.forEach(semCode => {
-                    const semSubs = bySemester[semCode];
-                    const semLabel = semCode === "prior" ? "🏛️ 전적대 학점" : semCode;
-                    const semCredit = semSubs.reduce((sum, s) => sum + (Number(s.credit) || 0), 0);
-
-                    html += `
-                        <div style="margin-bottom: 14px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
-                            <div style="background: #f7fafc; padding: 8px 12px; font-weight: bold; color: #2b6cb0; display:flex; justify-content:space-between;">
-                                <span>${semLabel}</span>
-                                <span>${semCredit}학점</span>
-                            </div>
-                            <table style="width:100%; border-collapse: collapse; font-size: 9.5pt;">
-                                <tbody>
-                                    ${semSubs.map(s => `
-                                        <tr>
-                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7;">${s.name}${s.isRetake ? ' <span style="color:#e53e3e; font-size:8.5pt;">(재수강)</span>' : ''}</td>
-                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; color:#718096; text-align:center;">${s.type || ''}</td>
-                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; text-align:center; font-weight:bold;">${s.credit}학점</td>
-                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; color:#718096; font-size:9pt;">${s.memo || ''}</td>
-                                        </tr>
-                                    `).join('')}
-                                </tbody>
-                            </table>
-                        </div>
-                    `;
-                });
-
-                if (subjects.length === 0) {
-                    html += `<div style="text-align:center; padding:20px; color:#a0aec0;">등록된 과목이 없습니다.</div>`;
-                }
-
-                if (data.memoHistory && data.memoHistory.length > 0) {
-                    html += `
-                        <div style="margin-top: 18px;">
-                            <div style="font-weight:bold; color:#1a365d; margin-bottom: 8px;">🕒 메모 이력</div>
-                            ${data.memoHistory.map(m => `
-                                <div style="padding: 8px 12px; background:#f7fafc; border-radius:6px; margin-bottom: 6px; font-size: 9.5pt;">
-                                    <div style="color:#a0aec0; font-size:8.5pt; margin-bottom:2px;">${m.date}</div>
-                                    <div style="white-space: pre-wrap;">${m.content}</div>
-                                </div>
-                            `).join('')}
-                        </div>
-                    `;
-                }
-
-                modalBody.innerHTML = html;
-            })
-            .catch(() => {
-                modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#c53030;">불러오는 중 오류가 발생했습니다.</div>`;
-            });
     }
 
     function closeStudentCard() {
         document.getElementById("student-modal").style.display = "none";
+        document.getElementById("student-modal-body").innerHTML = "";
     }
 </script>
 </body>
