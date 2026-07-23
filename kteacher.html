@@ -31,6 +31,8 @@
     color:var(--ink);
     font-family:var(--sans);
     -webkit-font-smoothing:antialiased;
+    word-break:keep-all;
+    overflow-wrap:break-word;
   }
   a{color:inherit;}
   img{max-width:100%;display:block;}
@@ -462,7 +464,6 @@
 
 <section id="apply">
   <div class="wrap">
-    <iframe name="gform_target" style="display:none;" title="구글 폼 전송용 숨김 프레임"></iframe>
     <form class="form-shell" id="consultForm">
       <div>
         <div class="section-tag" style="color:var(--amber);opacity:1;">무료 학점 확인 상담</div>
@@ -523,6 +524,7 @@
 <script>
 document.getElementById('consultForm').addEventListener('submit', function(e){
   e.preventDefault();
+  var formElement = this;
 
   var name = document.getElementById('name').value;
   var phone = document.getElementById('phone').value;
@@ -531,35 +533,24 @@ document.getElementById('consultForm').addEventListener('submit', function(e){
   var cohort = cohortEl ? cohortEl.value : '';
 
   var GOOGLE_FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSe5gQswXtgqb3VH6p-3wWyGTis_S2i494Wnbu24IwKkc44sMA/formResponse';
-  var ENTRY_NAME = 'entry.2098120320';
-  var ENTRY_PHONE = 'entry.1089952225';
-  var ENTRY_CREDIT_STATUS = 'entry.1486983580';
-  var ENTRY_COHORT = 'entry.231396337';
 
-  var gform = document.createElement('form');
-  gform.action = GOOGLE_FORM_ACTION;
-  gform.method = 'POST';
-  gform.target = 'gform_target';
-  gform.style.display = 'none';
+  var params = new URLSearchParams();
+  params.append('entry.2098120320', name);
+  params.append('entry.1089952225', phone);
+  params.append('entry.1486983580', creditStatus);
+  params.append('entry.231396337', cohort);
 
-  function addField(entryName, value){
-    var input = document.createElement('input');
-    input.type = 'hidden';
-    input.name = entryName;
-    input.value = value;
-    gform.appendChild(input);
-  }
-  addField(ENTRY_NAME, name);
-  addField(ENTRY_PHONE, phone);
-  addField(ENTRY_CREDIT_STATUS, creditStatus);
-  addField(ENTRY_COHORT, cohort);
-
-  document.body.appendChild(gform);
-  gform.submit();
-  document.body.removeChild(gform);
+  fetch(GOOGLE_FORM_ACTION, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+    body: params.toString()
+  }).catch(function(err){
+    console.error('구글 폼 전송 중 오류:', err);
+  });
 
   document.getElementById('confirmMsg').classList.add('show');
-  this.reset();
+  formElement.reset();
 });
 
 (function(){
