@@ -5,14 +5,33 @@
 <title>학습 설계 관리자 대시보드</title>
 <style>
     body { font-family: 'Malgun Gothic', 'Apple SD Gothic Neo', sans-serif; margin: 0; padding: 0; background-color: #faf9f6; color: #2d3748; }
-    .header-banner { background-color: #1a365d; color: #ffffff; padding: 24px 20px; border-bottom: 4px solid #d69e2e; }
-    .header-banner h1 { margin: 0; font-size: 18pt; }
-    .header-banner p { margin: 6px 0 0 0; font-size: 10pt; color: #e2e8f0; opacity: 0.9; }
-    .container { max-width: 1100px; margin: 0 auto; padding: 24px 20px; }
+
+    .sidebar {
+        position: fixed; top: 0; left: 0; bottom: 0; width: 230px;
+        background-color: #1a365d; color: #ffffff; padding: 20px 16px;
+        box-sizing: border-box; overflow-y: auto; border-right: 4px solid #d69e2e;
+        display: flex; flex-direction: column; gap: 14px;
+    }
+    .sidebar h1 { font-size: 13pt; margin: 0 0 4px 0; line-height: 1.4; }
+    .sidebar p { font-size: 8.5pt; color: #e2e8f0; opacity: 0.85; margin: 0 0 10px 0; line-height: 1.4; }
+    .sidebar label { font-size: 8.5pt; font-weight: bold; color: #cbd5e0; display: block; margin-bottom: 4px; }
+    .sidebar input[type="text"], .sidebar select {
+        width: 100%; box-sizing: border-box; padding: 8px 10px; border-radius: 6px; border: none; font-size: 10pt;
+    }
+    .sidebar button, .sidebar a.open-btn {
+        width: 100%; box-sizing: border-box; padding: 9px 10px; border-radius: 6px; border: none;
+        font-size: 10pt; cursor: pointer; text-align: center; text-decoration: none; display: block;
+    }
+    .sidebar .refresh-btn { background-color: #2b6cb0; color: #fff; }
+    .sidebar .app-open-btn { background-color: #2f855a; color: #fff; }
+    .sidebar .logout-btn { background-color: #4a5568; color: #fff; margin-top: auto; }
+    .sidebar-divider { border-top: 1px solid rgba(255,255,255,0.15); margin: 4px 0; }
+
+    .main-content { margin-left: 230px; padding: 24px 28px; }
 
     .card { background: #ffffff; border: 1px solid #e2e8f0; border-radius: 8px; padding: 20px; box-shadow: 0 1px 4px rgba(0,0,0,0.06); }
 
-    #login-screen { max-width: 400px; margin: 60px auto; }
+    #login-screen { max-width: 400px; margin: 100px auto; }
     #login-screen input { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 11pt; border: 1px solid #cbd5e0; border-radius: 6px; margin-bottom: 10px; }
     #login-screen button { width: 100%; padding: 10px; font-size: 11pt; font-weight: bold; background-color: #2b6cb0; color: #fff; border: none; border-radius: 6px; cursor: pointer; }
     #login-screen button:hover { background-color: #2c5282; }
@@ -23,11 +42,6 @@
     @keyframes spin { to { transform: rotate(360deg); } }
 
     #dashboard-screen { display: none; }
-
-    .toolbar { display: flex; gap: 10px; margin-bottom: 16px; flex-wrap: wrap; align-items: center; }
-    .toolbar input[type="text"] { flex: 1; min-width: 200px; padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 10.5pt; }
-    .toolbar select { padding: 8px 10px; border: 1px solid #cbd5e0; border-radius: 6px; font-size: 10.5pt; }
-    .toolbar button { padding: 8px 14px; border: none; border-radius: 6px; background-color: #4a5568; color: #fff; font-size: 10pt; cursor: pointer; }
 
     table { width: 100%; border-collapse: collapse; font-size: 10.5pt; }
     th { background-color: #f7fafc; color: #4a5568; font-weight: bold; text-align: left; padding: 10px 12px; border-bottom: 2px solid #e2e8f0; cursor: pointer; user-select: none; }
@@ -45,39 +59,75 @@
 
     #empty-state, #loading-state { text-align: center; padding: 40px; color: #718096; }
     #student-count { font-size: 10pt; color: #718096; margin-bottom: 10px; }
+
+    .name-link { color: #2b6cb0; font-weight: bold; cursor: pointer; text-decoration: underline; text-decoration-color: transparent; }
+    .name-link:hover { text-decoration-color: #2b6cb0; }
+
+    #student-modal {
+        display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+        background: rgba(26, 54, 93, 0.5); z-index: 1000; align-items: center; justify-content: center; padding: 20px;
+    }
+    #student-modal-card {
+        background: #ffffff; border-radius: 10px; max-width: 640px; width: 100%; max-height: 85vh;
+        overflow-y: auto; padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.2); position: relative;
+    }
+    #student-modal-close {
+        position: absolute; top: 14px; right: 16px; cursor: pointer; font-size: 14pt; color: #a0aec0; border: none; background: none;
+    }
+    #student-modal-close:hover { color: #4a5568; }
+
+    @media (max-width: 700px) {
+        .sidebar { position: static; width: auto; border-right: none; border-bottom: 4px solid #d69e2e; }
+        .main-content { margin-left: 0; }
+    }
 </style>
 </head>
 <body>
 
-    <div class="header-banner">
-        <h1>🛠️ 학습 설계 관리자 대시보드</h1>
-        <p>등록된 전체 학생을 조회하고, 클릭해서 상세 화면으로 열람/수정할 수 있습니다.</p>
+    <div id="login-screen" class="card">
+        <div style="font-weight: bold; margin-bottom: 12px; color: #1a365d;">🔒 관리자 비밀번호를 입력하세요</div>
+        <form id="login-form" onsubmit="event.preventDefault(); login();">
+            <input type="password" id="password-input" placeholder="비밀번호">
+            <button type="submit" id="login-btn">입장</button>
+        </form>
+        <div id="login-error">비밀번호가 올바르지 않습니다.</div>
     </div>
 
-    <div class="container">
+    <div id="dashboard-screen">
+        <div class="sidebar">
+            <div>
+                <h1>🛠️ 학습 설계<br>관리자 대시보드</h1>
+                <p>등록된 전체 학생을 조회하고, 클릭해서 상세 화면으로 열람/수정할 수 있습니다.</p>
+            </div>
 
-        <div id="login-screen" class="card">
-            <div style="font-weight: bold; margin-bottom: 12px; color: #1a365d;">🔒 관리자 비밀번호를 입력하세요</div>
-            <form id="login-form" onsubmit="event.preventDefault(); login();">
-                <input type="password" id="password-input" placeholder="비밀번호">
-                <button type="submit" id="login-btn">입장</button>
-            </form>
-            <div id="login-error">비밀번호가 올바르지 않습니다.</div>
-        </div>
+            <div>
+                <label for="search-input">🔍 이름 검색</label>
+                <input type="text" id="search-input" placeholder="이름으로 검색" oninput="renderTable()">
+            </div>
 
-        <div id="dashboard-screen">
-            <div class="toolbar">
-                <input type="text" id="search-input" placeholder="🔍 이름으로 검색" oninput="renderTable()">
+            <div>
+                <label for="phone-search-input">📱 전화번호 뒷자리 검색</label>
+                <input type="text" id="phone-search-input" placeholder="뒷자리 입력 (예: 1234)" maxlength="4" oninput="renderTable()">
+            </div>
+
+            <div>
+                <label for="course-filter">과정 필터</label>
                 <select id="course-filter" onchange="renderTable()">
                     <option value="">전체 과정</option>
                     <option value="korean_teacher">한국어교원 2급</option>
                     <option value="social_worker">사회복지사 2급</option>
                 </select>
-                <button onclick="loadStudents()">🔄 새로고침</button>
-                <a id="open-app-btn" href="#" target="_blank" class="open-btn" style="background-color: #2f855a;">📖 학습 설계 통합 앱 열기</a>
-                <button onclick="logout()" style="background-color: #718096;">🔒 로그아웃</button>
             </div>
 
+            <button class="refresh-btn" onclick="loadStudents()">🔄 새로고침</button>
+            <a id="open-app-btn" class="open-btn app-open-btn" href="#" target="_blank">📖 학습 설계 통합 앱 열기</a>
+
+            <div class="sidebar-divider"></div>
+
+            <button class="logout-btn" onclick="logout()">🔒 로그아웃</button>
+        </div>
+
+        <div class="main-content">
             <div id="student-count"></div>
             <div id="loading-state">불러오는 중...</div>
             <div id="empty-state" style="display:none;">등록된 학생이 없습니다.</div>
@@ -98,6 +148,13 @@
                     <tbody id="student-table-body"></tbody>
                 </table>
             </div>
+        </div>
+    </div>
+
+    <div id="student-modal" onclick="if(event.target===this) closeStudentCard()">
+        <div id="student-modal-card">
+            <button id="student-modal-close" onclick="closeStudentCard()">✕</button>
+            <div id="student-modal-body"></div>
         </div>
     </div>
 
@@ -192,12 +249,14 @@
 
     function renderTable() {
         const search = document.getElementById("search-input").value.trim();
+        const phoneSearch = document.getElementById("phone-search-input").value.trim();
         const courseFilterVal = document.getElementById("course-filter").value;
 
         let filtered = allStudents.filter(s => {
             const matchName = !search || s.name.includes(search);
+            const matchPhone = !phoneSearch || s.phone.endsWith(phoneSearch);
             const matchCourse = !courseFilterVal || s.course === courseFilterVal;
-            return matchName && matchCourse;
+            return matchName && matchPhone && matchCourse;
         });
 
         filtered.sort((a, b) => {
@@ -228,8 +287,8 @@
             const openUrl = `${MAIN_APP_FILENAME}?adminName=${encodeURIComponent(s.name)}&adminPhone=${encodeURIComponent(suffix)}&adminCourse=${encodeURIComponent(s.course)}`;
 
             return `
-                <tr>
-                    <td>${s.name}</td>
+                <tr data-name="${s.name}" data-suffix="${suffix}" data-course="${s.course}">
+                    <td><span class="name-link" onclick="showStudentCard(this)">${s.name}</span></td>
                     <td>${s.phone}</td>
                     <td><span class="course-badge ${courseClass}">${courseLabel}</span></td>
                     <td>${s.subjectCount}과목</td>
@@ -239,6 +298,112 @@
                 </tr>
             `;
         }).join('');
+    }
+
+    function showStudentCard(el) {
+        const tr = el.closest("tr");
+        const name = tr.dataset.name;
+        const suffix = tr.dataset.suffix;
+        const course = tr.dataset.course;
+
+        const modal = document.getElementById("student-modal");
+        const modalBody = document.getElementById("student-modal-body");
+        modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#718096;">불러오는 중...</div>`;
+        modal.style.display = "flex";
+
+        fetch(`${API_URL}?name=${encodeURIComponent(name)}&suffix=${encodeURIComponent(suffix)}&course=${encodeURIComponent(course)}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status !== "success") {
+                    modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#718096;">데이터를 찾을 수 없습니다.</div>`;
+                    return;
+                }
+
+                const subjects = data.subjects || [];
+                const courseLabel = courseLabels[course] || course;
+
+                const bySemester = {};
+                subjects.forEach(s => {
+                    const key = s.semesterCode || "미지정";
+                    if (!bySemester[key]) bySemester[key] = [];
+                    bySemester[key].push(s);
+                });
+
+                const semesterOrderGuess = Object.keys(bySemester).sort((a, b) => {
+                    if (a === "prior") return 1;
+                    if (b === "prior") return -1;
+                    return a.localeCompare(b);
+                });
+
+                const totalCredit = subjects.reduce((sum, s) => sum + (Number(s.credit) || 0), 0);
+
+                let html = `
+                    <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+                        <div>
+                            <div style="font-size: 14pt; font-weight: bold; color: #1a365d;">${name}</div>
+                            <div style="font-size: 9.5pt; color: #718096; margin-top: 2px;">${data.userPhone || ""} · <span class="course-badge ${courseLabels[course] ? course : 'unknown'}">${courseLabel}</span></div>
+                        </div>
+                        <div style="text-align:right;">
+                            <div style="font-size: 9.5pt; color: #718096;">총 이수 학점</div>
+                            <div style="font-size: 16pt; font-weight: bold; color: #2b6cb0;">${totalCredit}학점 <span style="font-size:9pt; color:#a0aec0;">(${subjects.length}과목)</span></div>
+                        </div>
+                    </div>
+                `;
+
+                semesterOrderGuess.forEach(semCode => {
+                    const semSubs = bySemester[semCode];
+                    const semLabel = semCode === "prior" ? "🏛️ 전적대 학점" : semCode;
+                    const semCredit = semSubs.reduce((sum, s) => sum + (Number(s.credit) || 0), 0);
+
+                    html += `
+                        <div style="margin-bottom: 14px; border: 1px solid #e2e8f0; border-radius: 6px; overflow: hidden;">
+                            <div style="background: #f7fafc; padding: 8px 12px; font-weight: bold; color: #2b6cb0; display:flex; justify-content:space-between;">
+                                <span>${semLabel}</span>
+                                <span>${semCredit}학점</span>
+                            </div>
+                            <table style="width:100%; border-collapse: collapse; font-size: 9.5pt;">
+                                <tbody>
+                                    ${semSubs.map(s => `
+                                        <tr>
+                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7;">${s.name}${s.isRetake ? ' <span style="color:#e53e3e; font-size:8.5pt;">(재수강)</span>' : ''}</td>
+                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; color:#718096; text-align:center;">${s.type || ''}</td>
+                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; text-align:center; font-weight:bold;">${s.credit}학점</td>
+                                            <td style="padding: 6px 12px; border-top: 1px solid #edf2f7; color:#718096; font-size:9pt;">${s.memo || ''}</td>
+                                        </tr>
+                                    `).join('')}
+                                </tbody>
+                            </table>
+                        </div>
+                    `;
+                });
+
+                if (subjects.length === 0) {
+                    html += `<div style="text-align:center; padding:20px; color:#a0aec0;">등록된 과목이 없습니다.</div>`;
+                }
+
+                if (data.memoHistory && data.memoHistory.length > 0) {
+                    html += `
+                        <div style="margin-top: 18px;">
+                            <div style="font-weight:bold; color:#1a365d; margin-bottom: 8px;">🕒 메모 이력</div>
+                            ${data.memoHistory.map(m => `
+                                <div style="padding: 8px 12px; background:#f7fafc; border-radius:6px; margin-bottom: 6px; font-size: 9.5pt;">
+                                    <div style="color:#a0aec0; font-size:8.5pt; margin-bottom:2px;">${m.date}</div>
+                                    <div style="white-space: pre-wrap;">${m.content}</div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    `;
+                }
+
+                modalBody.innerHTML = html;
+            })
+            .catch(() => {
+                modalBody.innerHTML = `<div style="text-align:center; padding:30px; color:#c53030;">불러오는 중 오류가 발생했습니다.</div>`;
+            });
+    }
+
+    function closeStudentCard() {
+        document.getElementById("student-modal").style.display = "none";
     }
 </script>
 </body>
