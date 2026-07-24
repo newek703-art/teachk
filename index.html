@@ -321,20 +321,6 @@
                     </div>
                 </div>
             </div>
-
-            <div id="card-admin-memo" class="card collapsed" style="margin-bottom: 0; padding: 14px;">
-                <div class="card-title" style="margin-bottom: 10px; padding-bottom: 6px;">
-                    <span>🔒 담당자 전용 메모 <span style="font-weight:normal; color:#a0aec0; font-size:8.5pt;">(학습자에게 안 보임)</span></span>
-                    <div class="card-controls">
-                        <span class="collapse-btn" onclick="toggleCard(this, event)">펼치기 🔽</span>
-                    </div>
-                </div>
-                <div class="card-body">
-                    <div class="overall-memo-container">
-                        <textarea id="admin-memo" class="overall-memo-textarea" style="background-color:#fffaf0; border-color:#fbd38d;" placeholder="상담 이력, 유의사항, 학습자에게는 공유하지 않을 내부 메모를 입력하세요." oninput="updateAdminMemo(this.value)"></textarea>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 
@@ -599,7 +585,7 @@
 
                 <div style="margin-top: 25px; padding: 16px; background-color: #f7fafc; border: 1px solid #cbd5e0; border-radius: 6px;">
                     <div style="font-weight: bold; color: #1a365d; margin-bottom: 6px; font-size: 10.5pt;">📌 학습 설계 종합 안내 및 특이사항 <span style="font-weight: normal; color: #a0aec0; font-size: 8.5pt;">(클릭해서 바로 수정 가능)</span></div>
-                    <div id="learner-view-memo" contenteditable="true" oninput="updateOverallMemo(this.innerText)" onfocus="handleLearnerMemoFocus(this)" style="font-size: 10pt; color: #4a5568; white-space: pre-wrap; line-height: 1.6; min-height: 40px; outline: none; border-radius: 4px; padding: 4px; cursor: text;" onmouseover="this.style.backgroundColor='#ffffff'" onmouseout="if(document.activeElement!==this) this.style.backgroundColor='transparent'" onfocusin="this.style.backgroundColor='#ffffff'">등록된 메모가 없습니다.</div>
+                    <div id="learner-view-memo" contenteditable="true" oninput="updateLearnerNote(this.innerText)" onfocus="handleLearnerMemoFocus(this)" style="font-size: 10pt; color: #4a5568; white-space: pre-wrap; line-height: 1.6; min-height: 40px; outline: none; border-radius: 4px; padding: 4px; cursor: text;" onmouseover="this.style.backgroundColor='#ffffff'" onmouseout="if(document.activeElement!==this) this.style.backgroundColor='transparent'" onfocusin="this.style.backgroundColor='#ffffff'">등록된 메모가 없습니다.</div>
                 </div>
 
                 <!-- 영역별 이수 과목 체크리스트 -->
@@ -910,7 +896,7 @@
 
         let subjects = [];
         let overallMemo = "";
-        let adminMemo = "";
+        let learnerNote = "";
         let memoHistory = [];
         let nextId = 1;
 
@@ -1029,7 +1015,7 @@
                 pursuingDegree = true;
             }
             overallMemo = "";
-            adminMemo = "";
+            learnerNote = "";
             memoHistory = [];
 
             applyLawVariant();
@@ -1245,15 +1231,16 @@
             if (memoTextarea && document.activeElement !== memoTextarea) {
                 memoTextarea.value = overallMemo;
             }
-            const learnerMemoEl = document.getElementById("learner-view-memo");
-            if (learnerMemoEl && document.activeElement !== learnerMemoEl) {
-                learnerMemoEl.innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
-            }
         }
 
-        function updateAdminMemo(text) {
-            adminMemo = text;
+        function updateLearnerNote(text) {
+            learnerNote = text;
             saveToLocalStorage();
+
+            const learnerMemoEl = document.getElementById("learner-view-memo");
+            if (learnerMemoEl && document.activeElement !== learnerMemoEl) {
+                learnerMemoEl.innerText = learnerNote ? learnerNote : "등록된 전체 메모가 없습니다.";
+            }
         }
 
         function handleLearnerMemoFocus(el) {
@@ -1490,6 +1477,7 @@
             if (confirm("⚠️ 모든 수강 데이터, 전적대 과목 및 메모가 완전히 초기화됩니다.\n정말로 전체 초기화하시겠습니까?")) {
                 subjects = []; 
                 overallMemo = "";
+                learnerNote = "";
                 memoHistory = [];
                 nextId = 1; 
                 renderAll();
@@ -1645,7 +1633,7 @@
             renderAreaChecklist();
             const learnerMemoEl = document.getElementById("learner-view-memo");
             if (learnerMemoEl && document.activeElement !== learnerMemoEl) {
-                learnerMemoEl.innerText = overallMemo ? overallMemo : "등록된 전체 메모가 없습니다.";
+                learnerMemoEl.innerText = learnerNote ? learnerNote : "등록된 전체 메모가 없습니다.";
             }
 
             const gridContainer = document.getElementById("learner-grid-container");
@@ -2095,7 +2083,7 @@
             fetch(API_URL, {
                 method: "POST",
                 headers: { "Content-Type": "text/plain" },
-                body: JSON.stringify({ userName: name, userPhone: formattedPhone, course: currentCourse, subjects: subjects, overallMemo: overallMemo, adminMemo: adminMemo, customSemesters: getCustomSemestersPayload() })
+                body: JSON.stringify({ userName: name, userPhone: formattedPhone, course: currentCourse, subjects: subjects, overallMemo: overallMemo, learnerNote: learnerNote, customSemesters: getCustomSemestersPayload() })
             })
             .then(res => res.json())
             .then(data => {
@@ -2138,15 +2126,16 @@
                     if (data.status === "success" && data.subjects) {
                         const keepX = window.scrollX, keepY = window.scrollY;
                         subjects = data.subjects;
-                        // 메모칸은 '새 메모 작성용'이므로 불러오기 시 항상 비워둠
+                        // 통합 메모는 담당자가 매번 새로 쓰는 이력형 메모이므로 불러오기 시 항상 비워둠
                         overallMemo = "";
                         const memoTextarea = document.getElementById("overall-memo");
                         if (memoTextarea) memoTextarea.value = "";
                         memoHistory = Array.isArray(data.memoHistory) ? data.memoHistory : [];
                         renderMemoHistory();
-                        adminMemo = data.adminMemo || "";
-                        const adminMemoTextarea = document.getElementById("admin-memo");
-                        if (adminMemoTextarea) adminMemoTextarea.value = adminMemo;
+                        // 학습자 공유 페이지용 메모는 별도로 독립 저장/복원
+                        learnerNote = data.learnerNote || "";
+                        const learnerMemoEl = document.getElementById("learner-view-memo");
+                        if (learnerMemoEl) learnerMemoEl.innerText = learnerNote ? learnerNote : "등록된 전체 메모가 없습니다.";
                         const fullPhoneField = document.getElementById("user-phone-full");
                         const loadedPhone = data.userPhone || data.phone || data.userPhoneFull;
                         if (fullPhoneField && loadedPhone) fullPhoneField.value = loadedPhone;
