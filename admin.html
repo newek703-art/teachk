@@ -316,10 +316,16 @@
         const suffix = tr.dataset.suffix;
         const course = tr.dataset.course;
 
+        const src = `${MAIN_APP_FILENAME}?adminName=${encodeURIComponent(name)}&adminPhone=${encodeURIComponent(suffix)}&adminCourse=${encodeURIComponent(course)}&adminView=learner&_=${Date.now()}`;
+
+        // 모바일(좁은 화면)에서는 작은 iframe에 욱여넣으면 글자가 너무 작아지므로, 새 탭에서 전체화면으로 열어줌
+        if (window.innerWidth < 700) {
+            window.open(src, "_blank");
+            return;
+        }
+
         const modal = document.getElementById("student-modal");
         const modalBody = document.getElementById("student-modal-body");
-
-        const src = `${MAIN_APP_FILENAME}?adminName=${encodeURIComponent(name)}&adminPhone=${encodeURIComponent(suffix)}&adminCourse=${encodeURIComponent(course)}&adminView=learner&_=${Date.now()}`;
 
         modalBody.innerHTML = `
             <div id="admin-memo-box" style="display:none; margin-bottom: 12px; padding: 10px 14px; background: #fffaf0; border: 1px solid #fbd38d; border-radius: 6px; max-height: 220px; overflow-y: auto;">
