@@ -45,6 +45,41 @@
     margin-bottom: 8px;
   }
 
+  .id-pw-btn {
+    margin-left: auto;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: #fff;
+    border: 1.5px solid var(--pink-soft);
+    color: var(--pink-deep);
+    font-family: 'Noto Sans KR', sans-serif;
+    font-weight: 700;
+    font-size: 13.5px;
+    padding: 10px 16px;
+    border-radius: 999px;
+    text-decoration: none;
+    white-space: nowrap;
+    transition: background 0.16s ease, transform 0.16s ease, box-shadow 0.16s ease;
+  }
+
+  .id-pw-btn:hover {
+    background: var(--pink-soft);
+    transform: translateY(-1px);
+    box-shadow: 0 8px 18px rgba(196,62,103,0.16);
+  }
+
+  .id-pw-btn svg {
+    width: 15px;
+    height: 15px;
+    flex: none;
+  }
+
+  @media (max-width: 620px) {
+    header { flex-wrap: wrap; }
+    .id-pw-btn { margin-left: 0; }
+  }
+
   header img {
     width: 64px;
     height: 64px;
@@ -193,6 +228,10 @@
         <h1>뷰티럽팡 셀러 대시보드</h1>
         <p>선크림 판매를 위한 스토어 관리 링크 모음</p>
       </div>
+      <a class="id-pw-btn" href="https://docs.google.com/spreadsheets/d/1bJAamVeyghyxdMbqGrHo0XUO-1B_Q8qK8qVr_FS1iAU/edit?gid=1430599490#gid=1430599490" target="_blank" rel="noopener">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>
+        ID / 비번 확인
+      </a>
     </header>
 
     <p class="headline">오늘도 스토어 점검, 여기서 한 번에</p>
