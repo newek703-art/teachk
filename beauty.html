@@ -123,8 +123,21 @@
     gap: 14px;
   }
 
+  .sections {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 14px;
+    margin-top: 40px;
+  }
+  .section .headline { margin-top: 0; }
+  .section .grid { grid-template-columns: 1fr; }
+
   @media (max-width: 820px) {
     .grid { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 700px) {
+    .sections { grid-template-columns: 1fr; gap: 0; }
+    .section { margin-top: 32px; }
   }
 
   @media (max-width: 620px) {
@@ -341,7 +354,10 @@
 
     </div>
 
-    <p class="headline" style="margin-top:40px;">배송 관리</p>
+    <div class="sections">
+
+    <div class="section">
+    <p class="headline">배송 관리</p>
     <p class="sub">판매 채널과는 별도로 관리하는 배송 관련 페이지예요.</p>
 
     <div class="grid">
@@ -356,8 +372,10 @@
       </a>
 
     </div>
+    </div>
 
-    <p class="headline" style="margin-top:40px;">고객 상담</p>
+    <div class="section">
+    <p class="headline">고객 상담</p>
     <p class="sub">판매 채널과는 별도로 관리하는 고객 문의 채널이에요.</p>
 
     <div class="grid">
@@ -372,8 +390,10 @@
       </a>
 
     </div>
+    </div>
 
-    <p class="headline" style="margin-top:40px;">광고 관리</p>
+    <div class="section">
+    <p class="headline">광고 관리</p>
     <p class="sub">판매 채널과는 별도로 관리하는 광고 집행 페이지예요.</p>
 
     <div class="grid">
@@ -386,6 +406,9 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M7 17L17 7"/><path d="M8 7h9v9"/></svg>
         </span>
       </a>
+
+    </div>
+    </div>
 
     </div>
 
